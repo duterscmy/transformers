@@ -22,6 +22,7 @@
 import inspect
 import math
 from typing import List, Optional, Tuple, Union
+import traceback
 
 import torch
 import torch.nn.functional as F
@@ -806,26 +807,30 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
     def forward(self, inputs):
-        _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
-        _prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
-        _layer_num = layer_num_list[-1]  # 模型的层数
-        global_layer_list[:] = []
-        if _global_layer == _layer_num-1:
-            global_layer_list.append(0)
-        else:
-            global_layer_list.append(_global_layer + 1)
-        
+        try:
+            _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
+            _prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
+            _layer_num = layer_num_list[-1]  # 模型的层数
+            global_layer_list[:] = []
+            if _global_layer == _layer_num-1:
+                global_layer_list.append(0)
+            else:
+                global_layer_list.append(_global_layer + 1)
+            
 
-        _relative_layer = _global_layer % _layer_num
-        if _relative_layer in _prune_layer_idx_to_expert_idxs:
-            _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
-            print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
-            output = self.forward_prune(inputs, _prune_expert_idxs)
-        else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
+            _relative_layer = _global_layer % _layer_num
+            if _relative_layer in _prune_layer_idx_to_expert_idxs:
+                _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
+                print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
+                output = self.forward_prune(inputs, _prune_expert_idxs)
+            else:
+                print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
+                output = self.forward_route(inputs)
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            print(e, err_msg)
             output = self.forward_route(inputs)
         return output
-    
     def forward_prune(self, hidden_states: torch.Tensor, _prune_expert_idxs) -> torch.Tensor:
         """ """
         batch_size, sequence_length, hidden_dim = hidden_states.shape

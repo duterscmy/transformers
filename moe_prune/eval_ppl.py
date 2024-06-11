@@ -149,6 +149,7 @@ if not os.path.exists(output_path):
 if score_mode == "l1":
     layer_idx_to_expert_idxs = json.load(
         open("moe_prune/layer_idx_to_expert_idx.json", 'r'))
+    layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "ww_alpha":
     layer_idx_to_expert_idxs = json.load(
         open("moe_prune/layer_idx_to_expert_idx.json", 'r'))
@@ -162,14 +163,14 @@ elif score_mode == "random":
 
 # decode and eval ppl
 # no prune
-# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-# print("no prune mean_ppl {}".format(mean_ppl))
-# mean_ppl = mean_ppl.tolist()
-# output = {"mean_ppl": mean_ppl}
-# model_id = "noPrune"
-# output_filename = "{}.json".format(model_id)
-# output_filename = os.path.join(output_path, output_filename)
-# json.dump(output, open(output_filename, 'w'))
+mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+print("no prune mean_ppl {}".format(mean_ppl))
+mean_ppl = mean_ppl.tolist()
+output = {"mean_ppl": mean_ppl}
+model_id = "noPrune"
+output_filename = "{}.json".format(model_id)
+output_filename = os.path.join(output_path, output_filename)
+json.dump(output, open(output_filename, 'w'))
 
 # prune
 for prune_layer_num in range(1, num_layer+1):  # 对前多少层进行剪枝
