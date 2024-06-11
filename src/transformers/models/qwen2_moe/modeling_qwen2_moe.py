@@ -852,7 +852,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         expert_outputs = []
         for expert_idx in _prune_expert_idxs:
             expert_layer = self.experts[expert_idx]
-            expert_output = expert_layer[hidden_states]
+            expert_output = expert_layer(hidden_states)
             expert_outputs.append(expert_output)
             # idx, top_x = torch.where(expert_mask[expert_idx])
 
