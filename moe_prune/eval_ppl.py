@@ -116,7 +116,7 @@ parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
                     help="MTBench数据集路径")
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
-parser.add_argument("--prune-one-layer", action="store_true",
+parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
 
 args = parser.parse_args()
@@ -138,8 +138,8 @@ score_mode = args.score_mode
 num_layer = 24
 num_expert = 64
 
-add_up = 1 if not args.prune_one_layer else 0
-output_path = "qwen2.7b_score_{}_add_up_{}".format(score_mode, add_up)
+layer_mode = args.layer_mode
+output_path = "qwen2.7b_score_{}_layer_mode_{}".format(score_mode, layer_mode)
 
 print(f"{pytorch_checkpoint_path} num_layer {num_layer} num_expert {num_expert}")
 if not os.path.exists(output_path):
@@ -174,13 +174,20 @@ output_filename = os.path.join(output_path, output_filename)
 json.dump(output, open(output_filename, 'w'))
 
 # prune
-for prune_layer_num in range(1, num_layer+1):  # 对前多少层进行剪枝
+for prune_layer_num in [1, 2, 4, 8, 12, 16, 24]:  # 对多少层/哪些层进行剪枝
     print("prune layer num {}".format(prune_layer_num))
     for prune_expert_num in [4, 8, 16]:  # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
         prune_layer_idx_to_expert_idxs = {}
-        prune_layer_idx_list = [
-            prune_layer_num-1] if args.prune_one_layer else list(range(prune_layer_num))
+
+        if layer_mode == "one_layer":
+            prune_layer_idx_list = [prune_layer_num-1]
+        elif layer_mode == "continous_layers":
+            prune_layer_idx_list = list(range(prune_layer_num))
+        elif layer_mode == "jump_layers":
+            # if num==5, then prune 0-4-8-12-16
+            step = 24 // prune_expert_num
+            prune_layer_idx_list = list(range(0, 24, step))
 
         for prune_layer_idx in prune_layer_idx_list:
             if prune_expert_num == 4:
