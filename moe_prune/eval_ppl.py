@@ -85,7 +85,7 @@ available_memory['cpu'] = cpu_memory
 print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
-config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
+#config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
 config = AutoConfig.from_pretrained("qw27")
 #weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
 with init_empty_weights():
