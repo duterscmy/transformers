@@ -831,6 +831,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
             print(e, err_msg)
             output = self.forward_route(inputs)
         return output
+    
     def forward_prune(self, hidden_states: torch.Tensor, _prune_expert_idxs) -> torch.Tensor:
         """ """
         batch_size, sequence_length, hidden_dim = hidden_states.shape
@@ -870,15 +871,17 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
             # # However `index_add_` only support torch tensors for indexing so we'll use
             # # the `top_x` tensor here.
             # final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
-        if len(expert_outputs):
-            stacked_tensors = torch.stack(expert_outputs)
-            final_hidden_states = torch.sum(stacked_tensors, dim=0)
-            shared_expert_output = self.shared_expert(hidden_states)
-            # shared_expert_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * shared_expert_output
 
+        if len(expert_outputs):  # 除了固定专家外还保留其他专家
+            stacked_tensors = torch.stack(expert_outputs)
+            final_hidden_states = torch.mean(stacked_tensors, dim=0)
+            shared_expert_output = self.shared_expert(hidden_states)
+            shared_expert_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * shared_expert_output
             final_hidden_states = final_hidden_states + shared_expert_output
-        else:
-            final_hidden_states = self.shared_expert(hidden_states)
+        else:  # 只有固定专家
+            shared_expert_output = self.shared_expert(hidden_states)
+            shared_expert_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * shared_expert_output
+            final_hidden_states = shared_expert_output
 
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
         return final_hidden_states, router_logits
