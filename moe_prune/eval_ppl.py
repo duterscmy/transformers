@@ -172,5 +172,5 @@ mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
 print("no prune mean_ppl {}".format(mean_ppl))
 
 import pickle
-print(route_analysis)
-pickle.dump(route_analysis, open("route_analysis.pkl", 'wb'))
+print(route_analysis[-1])
+pickle.dump(route_analysis[-1], open("route_analysis.pkl", 'wb'))
