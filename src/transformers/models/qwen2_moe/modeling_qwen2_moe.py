@@ -825,15 +825,24 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
 
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
-        print(hidden_states.size())
+        # print(hidden_states.size())
         # router_logits: (batch * sequence_length, n_experts)
         router_logits = self.gate(hidden_states)
 
         routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
         routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
-        print(selected_experts.size())
-        print(selected_experts)
-        exit()
+        # print(selected_experts.size())
+        # print(selected_experts)
+        # exit()
+        tmp_expert_idxs = selected_experts.detach().cpu().numpy().tolist()
+        for line in tmp_expert_idxs:
+            for idx in line:
+                key = (_relative_layer, idx)
+                if key in tmp:
+                    tmp[key] += 1
+                else:
+                    tmp[key] = 1
+        route_analysis.append(tmp)
         if self.norm_topk_prob:
             routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
         # we cast back to the input dtype

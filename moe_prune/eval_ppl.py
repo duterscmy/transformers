@@ -11,7 +11,7 @@ import json
 #import shortuuid
 import time
 
-from transformers.models.qwen2_moe.expert_idx import expert_idxs_list, global_layer_list, prune_layer_list, layer_num_list
+from transformers.models.qwen2_moe.expert_idx import expert_idxs_list, global_layer_list, prune_layer_list, layer_num_list, route_analysis
 
 
 def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
@@ -170,9 +170,7 @@ elif score_mode == "random":
 layer_num_list.append(num_layer)
 mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
 print("no prune mean_ppl {}".format(mean_ppl))
-mean_ppl = mean_ppl.tolist()
-output = {"mean_ppl": mean_ppl}
-model_id = "noPrune"
-output_filename = "{}.json".format(model_id)
-output_filename = os.path.join(output_path, output_filename)
-json.dump(output, open(output_filename, 'w'))
+
+import pickle
+print(route_analysis)
+pickle.dump(route_analysis, open("route_analysis.pkl", 'wb'))
