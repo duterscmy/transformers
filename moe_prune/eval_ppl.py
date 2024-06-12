@@ -86,6 +86,7 @@ print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
 config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
+config = AutoConfig.from_pretrained("qw27")
 #weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
 with init_empty_weights():
     model = AutoModelForCausalLM.from_config(config,
@@ -100,7 +101,8 @@ print('Inferred Device Map: \n', device_map)
 
 
 model = AutoModelForCausalLM.from_pretrained(
-    "Qwen/Qwen1.5-MoE-A2.7B",
+    #"Qwen/Qwen1.5-MoE-A2.7B",
+    "qw27",
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     # offload_folder="offload",
@@ -108,7 +110,8 @@ model = AutoModelForCausalLM.from_pretrained(
     # dtype=eval(f'torch.{model_dtype}'),
     # no_split_module_classes=[no_split_module_classes]
 )
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-MoE-A2.7B")
+#tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-MoE-A2.7B")
+tokenizer = AutoTokenizer.from_pretrained("qw27")
 
 
 parser = argparse.ArgumentParser()
@@ -174,9 +177,9 @@ output_filename = os.path.join(output_path, output_filename)
 json.dump(output, open(output_filename, 'w'))
 
 # prune
-for prune_layer_num in [1, 2, 4, 8, 12, 16, 24]:  # 对多少层/哪些层进行剪枝
+for prune_layer_num in [1, 2, 4, 8, 12, 24]:  # 对多少层/哪些层进行剪枝
     print("prune layer num {}".format(prune_layer_num))
-    for prune_expert_num in [4, 8, 16]:  # 保留的专家数量
+    for prune_expert_num in [4, 16]:  # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
         prune_layer_idx_to_expert_idxs = {}
 
@@ -186,7 +189,7 @@ for prune_layer_num in [1, 2, 4, 8, 12, 16, 24]:  # 对多少层/哪些层进行
             prune_layer_idx_list = list(range(prune_layer_num))
         elif layer_mode == "jump_layers":
             # if num==5, then prune 0-4-8-12-16
-            step = 24 // prune_expert_num
+            step = 24 // prune_layer_num
             prune_layer_idx_list = list(range(0, 24, step))
 
         for prune_layer_idx in prune_layer_idx_list:
