@@ -168,14 +168,14 @@ elif score_mode == "random":
 
 # decode and eval ppl
 # no prune
-mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-print("no prune mean_ppl {}".format(mean_ppl))
-mean_ppl = mean_ppl.tolist()
-output = {"mean_ppl": mean_ppl}
-model_id = "noPrune"
-output_filename = "{}.json".format(model_id)
-output_filename = os.path.join(output_path, output_filename)
-json.dump(output, open(output_filename, 'w'))
+# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+# print("no prune mean_ppl {}".format(mean_ppl))
+# mean_ppl = mean_ppl.tolist()
+# output = {"mean_ppl": mean_ppl}
+# model_id = "noPrune"
+# output_filename = "{}.json".format(model_id)
+# output_filename = os.path.join(output_path, output_filename)
+# json.dump(output, open(output_filename, 'w'))
 
 # prune
 for prune_layer_num in [1, 2, 4, 8, 12, 24]:  # 对多少层/哪些层进行剪枝
@@ -194,15 +194,12 @@ for prune_layer_num in [1, 2, 4, 8, 12, 24]:  # 对多少层/哪些层进行剪�
             prune_layer_idx_list = list(range(0, 24, step))
 
         for prune_layer_idx in prune_layer_idx_list:
-            if prune_expert_num == 4:
-                prune_layer_idx_to_expert_idxs[prune_layer_idx] = []
-            else:
-                true_prune_num = prune_expert_num - 4
-                prune_expert_idxs = layer_idx_to_expert_idxs[prune_layer_idx]
-                prune_expert_idxs = list(map(int, prune_expert_idxs))
-                prune_expert_idxs = list(
-                    filter(lambda x: x not in (60, 61, 62, 63), prune_expert_idxs))
-                prune_layer_idx_to_expert_idxs[prune_layer_idx] = prune_expert_idxs[:true_prune_num]
+            true_prune_num = prune_expert_num
+            prune_expert_idxs = layer_idx_to_expert_idxs[prune_layer_idx]
+            prune_expert_idxs = list(map(int, prune_expert_idxs))
+            # prune_expert_idxs = list(
+            #     filter(lambda x: x not in (60, 61, 62, 63), prune_expert_idxs))
+            prune_layer_idx_to_expert_idxs[prune_layer_idx] = prune_expert_idxs[:true_prune_num]
 
         print("prune layer idx to expert idxs {}".format(
             prune_layer_idx_to_expert_idxs))
