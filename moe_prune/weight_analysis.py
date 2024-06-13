@@ -32,7 +32,7 @@ print('Available Devices and Memory: ', available_memory)
 
 # %%
 config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
-weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
+# weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
 with init_empty_weights():
     model = AutoModelForCausalLM.from_config(config,
                                              torch_dtype=eval(f'torch.{model_dtype}'),
