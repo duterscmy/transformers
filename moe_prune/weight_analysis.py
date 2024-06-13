@@ -5,7 +5,7 @@ from accelerate import infer_auto_device_map, init_empty_weights, load_checkpoin
 from transformers import AutoTokenizer, T5Tokenizer, AutoConfig, AutoModelForCausalLM, LogitsProcessorList, LogitsProcessor
 from typing import List, Optional
 from huggingface_hub import snapshot_download
-
+import time
 
 pytorch_checkpoint_path = "qw27"
 
@@ -154,7 +154,7 @@ for layer_idx in range(24):
 #   expert_weights.extend(share_down_list)
 
   print("num expert weights {}".format(len(expert_weights)))
-
+  b = time.time()
   fake_model = expert_weights_to_fake_model(expert_weights)
 
   watcher = ww.WeightWatcher(model=fake_model)
@@ -162,7 +162,7 @@ for layer_idx in range(24):
   details
   alpha_list = list(details["alpha"])
   alpha_list
-  print(alpha_list)
+  print("get alpha for one layer {}".format(time.time()-b))
   print("len alpha list {}".format(len(alpha_list)))
   layer_idx_to_alpha_list[layer_idx] = alpha_list
 
