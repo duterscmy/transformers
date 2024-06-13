@@ -180,7 +180,7 @@ elif score_mode == "random":
 # prune
 for prune_layer_num in [1, 2, 4, 8, 12, 24]:  # 对多少层/哪些层进行剪枝
     print("prune layer num {}".format(prune_layer_num))
-    for prune_expert_num in [4, 16]:  # 保留的专家数量
+    for prune_expert_num in [8,4]:  # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
         prune_layer_idx_to_expert_idxs = {}
 
