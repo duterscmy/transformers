@@ -830,6 +830,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
                 expert.gate_proj.weight = nn.Parameter(gate_w)
                 expert.up_proj.weight = nn.Parameter(up_w)
                 expert.down_proj.weight = nn.Parameter(down_w)
+        
         self.experts = self.experts + self.divided_shared_experts
         print("split shared expert to 4 expert, num expert {}".format(len(self.experts)))
 

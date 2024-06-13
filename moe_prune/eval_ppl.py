@@ -112,7 +112,8 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 #tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-MoE-A2.7B")
 tokenizer = AutoTokenizer.from_pretrained("qw27")
-
+for layer in model.model.layers:
+    layer.mlp.split()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",

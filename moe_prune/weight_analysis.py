@@ -1,5 +1,9 @@
 # %%
 # %%
+import json
+import weightwatcher as ww
+import torch.nn as nn
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from accelerate import infer_auto_device_map, init_empty_weights, load_checkpoint_and_dispatch
 from transformers import AutoTokenizer, T5Tokenizer, AutoConfig, AutoModelForCausalLM, LogitsProcessorList, LogitsProcessor
@@ -9,11 +13,12 @@ import time
 
 pytorch_checkpoint_path = "qw27"
 
-available_gpu_ids_str = "0" # @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
-memory_per_gpu = "38GiB" # @param ["", "38GiB"] {allow-input: true}
-cpu_memory = '50GiB' #@param ["50GiB"] {allow-input: true}
-model_dtype = 'bfloat16' #@param ["float32", "bfloat16"]
-offload = False #@param {type:"boolean"}
+# @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
+available_gpu_ids_str = "0"
+memory_per_gpu = "38GiB"  # @param ["", "38GiB"] {allow-input: true}
+cpu_memory = '50GiB'  # @param ["50GiB"] {allow-input: true}
+model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
+offload = False  # @param {type:"boolean"}
 
 if torch.cuda.is_available():
     cuda_list = available_gpu_ids_str.split(',')
@@ -35,7 +40,8 @@ config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
 # weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
 with init_empty_weights():
     model = AutoModelForCausalLM.from_config(config,
-                                             torch_dtype=eval(f'torch.{model_dtype}'),
+                                             torch_dtype=eval(
+                                                 f'torch.{model_dtype}'),
                                              trust_remote_code=True)
 print('Model dtype: ', model.dtype)
 device_map = infer_auto_device_map(model,
@@ -44,10 +50,9 @@ device_map = infer_auto_device_map(model,
 print('Inferred Device Map: \n', device_map)
 
 # %%
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model = AutoModelForCausalLM.from_pretrained(
-    #"Qwen/Qwen1.5-MoE-A2.7B-Chat-GPTQ-Int4",
+    # "Qwen/Qwen1.5-MoE-A2.7B-Chat-GPTQ-Int4",
     # "Qwen/Qwen1.5-MoE-A2.7B",
     "qw27",
     device_map=device_map,
@@ -104,14 +109,15 @@ tokenizer = AutoTokenizer.from_pretrained("qw27")
 # alpha
 
 # %%
-import torch
-import torch.nn as nn
 
 # 创建新的模型，包含 32 个全连接层
+
+
 class MyModel(nn.Module):
     def __init__(self):
         super(MyModel, self).__init__()
-        self.fc_layers = nn.ModuleList([nn.Linear(2048, 1408, bias=False) for _ in range(64)])
+        self.fc_layers = nn.ModuleList(
+            [nn.Linear(2048, 1408, bias=False) for _ in range(64)])
 
     def forward(self, x):
         outputs = []
@@ -123,25 +129,26 @@ class MyModel(nn.Module):
 
 
 def expert_weights_to_fake_model(weights):
-  tmp_model = MyModel()
+    tmp_model = MyModel()
 
-  # 使用拆分的张量来初始化模型的参数
-  for i, tensor in enumerate(weights):
-      with torch.no_grad():
-          tmp_model.fc_layers[i].weight.copy_(tensor.t())
-  return tmp_model
+    # 使用拆分的张量来初始化模型的参数
+    for i, tensor in enumerate(weights):
+        with torch.no_grad():
+            tmp_model.fc_layers[i].weight.copy_(tensor.t())
+    return tmp_model
+
 
 # %%
 # ww alpha
-import weightwatcher as ww
 layer_idx_to_alpha_list = {}
 for layer_idx in range(24):
-  print(layer_idx)
-  
-  expert_weights = []
-  for expert_idx in range(len(model.model.layers[layer_idx].mlp.experts)):
-    w = model.model.layers[layer_idx].mlp.experts[expert_idx].down_proj.weight.to(torch.float32)
-    expert_weights.append(w)
+    print(layer_idx)
+
+    expert_weights = []
+    for expert_idx in range(len(model.model.layers[layer_idx].mlp.experts)):
+        w = model.model.layers[layer_idx].mlp.experts[expert_idx].down_proj.weight.to(
+            torch.float32)
+        expert_weights.append(w)
 
 #   share_expert = model.model.layers[layer_idx].mlp.shared_expert
 #   # share_gate = share_expert.gate_proj.weight.to(torch.float32) # 5632*2048
@@ -153,22 +160,19 @@ for layer_idx in range(24):
 #   share_down_list = torch.chunk(share_down, 4, dim=1)
 #   expert_weights.extend(share_down_list)
 
-  print("num expert weights {}".format(len(expert_weights)))
-  b = time.time()
-  fake_model = expert_weights_to_fake_model(expert_weights)
+    print("num expert weights {}".format(len(expert_weights)))
+    b = time.time()
+    fake_model = expert_weights_to_fake_model(expert_weights)
 
-  watcher = ww.WeightWatcher(model=fake_model)
-  details = watcher.analyze(mp_fit=True, randomize=True)
-  details
-  alpha_list = list(details["alpha"])
-  alpha_list
-  print("get alpha for one layer {}".format(time.time()-b))
-  print("len alpha list {}".format(len(alpha_list)))
-  layer_idx_to_alpha_list[layer_idx] = alpha_list
+    watcher = ww.WeightWatcher(model=fake_model)
+    details = watcher.analyze(mp_fit=True, randomize=True)
+    details
+    alpha_list = list(details["alpha"])
+    alpha_list
+    print("get alpha for one layer {}".format(time.time()-b))
+    print("len alpha list {}".format(len(alpha_list)))
+    layer_idx_to_alpha_list[layer_idx] = alpha_list
 
 # %%
 layer_idx_to_alpha_list
-import json
 json.dump(layer_idx_to_alpha_list, open("layer_idx_to_alpha_list.json", 'w'))
-
-
