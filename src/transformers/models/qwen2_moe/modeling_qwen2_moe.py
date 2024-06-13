@@ -816,10 +816,12 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         shared_gate_weight = self.shared_expert.gate_proj.weight.data
         shared_up_weight = self.shared_expert.up_proj.weight.data
         shared_down_weight = self.shared_expert.down_proj.weight.data
+        print("before split weight size:")
         print(shared_gate_weight.size(), shared_up_weight.size(), shared_down_weight.size())
         gate_chunks = torch.chunk(shared_gate_weight, 4, dim=0)
         up_chunks = torch.chunk(shared_up_weight, 4, dim=0)
         down_chunks = torch.chunk(shared_down_weight, 4, dim=1)
+        print("after split weight size:")
         print(gate_chunks[0].size(), up_chunks[0].size(), down_chunks[0].size())
 
         for expert, gate_w, up_w, down_w in zip(self.divided_shared_experts, gate_chunks, \
@@ -829,7 +831,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
                 expert.up_proj.weight = nn.Parameter(up_w)
                 expert.down_proj.weight = nn.Parameter(down_w)
         self.experts = self.experts + self.divided_shared_experts
-        print("split shared expert to 4 expert, num expert {}".format(len(self.expert)))
+        print("split shared expert to 4 expert, num expert {}".format(len(self.experts)))
 
     def forward(self, inputs):
         try:
