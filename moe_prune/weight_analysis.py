@@ -53,6 +53,9 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map=device_map,
     torch_dtype=torch.bfloat16,
 )
+
+for layer in model.model.layers:
+    layer.mlp.split()
 tokenizer = AutoTokenizer.from_pretrained("qw27")
 
 # %% [markdown]

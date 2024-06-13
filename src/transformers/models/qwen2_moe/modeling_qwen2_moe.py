@@ -796,7 +796,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         self.num_experts = config.num_experts
         self.top_k = config.num_experts_per_tok
         self.norm_topk_prob = config.norm_topk_prob
-
+        self.config = config
         # gating
         self.gate = nn.Linear(config.hidden_size, config.num_experts, bias=False)
         self.experts = nn.ModuleList(
@@ -806,7 +806,10 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         self.shared_expert = Qwen2MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
+    def split(self):
         # divide shared experts
+        print("before split num experts {}".format(len(self.experts)))
+        config = self.config
         self.divided_shared_experts = nn.ModuleList(
             [Qwen2MoeMLP(config, intermediate_size=config.moe_intermediate_size) for _ in range(4)]
         )
@@ -826,7 +829,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
                 expert.up_proj.weight = nn.Parameter(up_w)
                 expert.down_proj.weight = nn.Parameter(down_w)
         self.experts = self.experts + self.divided_shared_experts
-        print("num experts: {}".format(len(self.experts)))
+        print("split shared expert to 4 expert, num expert {}".format(len(self.expert)))
 
     def forward(self, inputs):
         try:
