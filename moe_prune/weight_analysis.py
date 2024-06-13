@@ -117,7 +117,7 @@ class MyModel(nn.Module):
     def __init__(self):
         super(MyModel, self).__init__()
         self.fc_layers = nn.ModuleList(
-            [nn.Linear(2048, 1408, bias=False) for _ in range(64)])
+            [nn.Linear(2048, 1408, bias=False) for _ in range(4)])
 
     def forward(self, x):
         outputs = []
@@ -130,7 +130,8 @@ class MyModel(nn.Module):
 
 def expert_weights_to_fake_model(weights):
     tmp_model = MyModel()
-
+    print("使用{}个权重来创建一个假模型计算alpha,其中首尾权重的形状为{} {}".format(
+        len(weights), weights[0].size(), weights[-1].size()))
     # 使用拆分的张量来初始化模型的参数
     for i, tensor in enumerate(weights):
         with torch.no_grad():
@@ -145,7 +146,7 @@ for layer_idx in range(24):
     print(layer_idx)
 
     expert_weights = []
-    for expert_idx in range(len(model.model.layers[layer_idx].mlp.experts)):
+    for expert_idx in range(60, len(model.model.layers[layer_idx].mlp.experts)):
         w = model.model.layers[layer_idx].mlp.experts[expert_idx].down_proj.weight.to(
             torch.float32)
         expert_weights.append(w)
