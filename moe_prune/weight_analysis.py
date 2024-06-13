@@ -136,21 +136,21 @@ for layer_idx in range(24):
   print(layer_idx)
   
   expert_weights = []
-  for expert_idx in range(60):
+  for expert_idx in range(len(model.model.layers[layer_idx].mlp.experts)):
     w = model.model.layers[layer_idx].mlp.experts[expert_idx].down_proj.weight.to(torch.float32)
     expert_weights.append(w)
 
-  share_expert = model.model.layers[layer_idx].mlp.shared_expert
-  # share_gate = share_expert.gate_proj.weight.to(torch.float32) # 5632*2048
-  # share_up = share_expert.up_proj.weight.to(torch.float32) # 5632*2048
-  share_down = share_expert.down_proj.weight.to(torch.float32) # 2048*5632
-  # print(share_gate.size(), share_up.size(), share_down.size())
-  # share_gate_list = torch.split(share_gate, 1408, dim=0)
-  # share_up_list = torch.split(share_up, 1408, dim=0)
-  share_down_list = torch.chunk(share_down, 4, dim=1)
-  expert_weights.extend(share_down_list)
+#   share_expert = model.model.layers[layer_idx].mlp.shared_expert
+#   # share_gate = share_expert.gate_proj.weight.to(torch.float32) # 5632*2048
+#   # share_up = share_expert.up_proj.weight.to(torch.float32) # 5632*2048
+#   share_down = share_expert.down_proj.weight.to(torch.float32) # 2048*5632
+#   # print(share_gate.size(), share_up.size(), share_down.size())
+#   # share_gate_list = torch.split(share_gate, 1408, dim=0)
+#   # share_up_list = torch.split(share_up, 1408, dim=0)
+#   share_down_list = torch.chunk(share_down, 4, dim=1)
+#   expert_weights.extend(share_down_list)
 
-  print(len(expert_weights), expert_weights[0].size(), expert_weights[-1].size())
+  print("num expert weights {}".format(len(expert_weights)))
 
   fake_model = expert_weights_to_fake_model(expert_weights)
 
