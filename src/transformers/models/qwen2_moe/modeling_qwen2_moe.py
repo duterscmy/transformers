@@ -806,6 +806,28 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         self.shared_expert = Qwen2MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
+        # divide shared experts
+        self.divided_shared_experts = nn.ModuleList(
+            [Qwen2MoeMLP(config, intermediate_size=config.moe_intermediate_size) for _ in range(4)]
+        )
+        shared_gate_weight = self.shared_expert.gate_proj.weight.data
+        shared_up_weight = self.shared_expert.up_proj.weight.data
+        shared_down_weight = self.shared_expert.down_proj.weight.data
+        print(shared_gate_weight.size(), shared_up_weight.size(), shared_down_weight.size())
+        gate_chunks = torch.chunk(shared_gate_weight, 4, dim=0)
+        up_chunks = torch.chunk(shared_up_weight, 4, dim=0)
+        down_chunks = torch.chunk(shared_down_weight, 4, dim=1)
+        print(gate_chunks[0].size(), up_chunks[0].size(), down_chunks[0].size())
+
+        for expert, gate_w, up_w, down_w in zip(self.divided_shared_experts, gate_chunks, \
+                                                up_chunks, down_chunks):
+            with torch.no_grad():  # 禁用梯度计算
+                expert.gate_proj.weight = nn.Parameter(gate_w)
+                expert.up_proj.weight = nn.Parameter(up_w)
+                expert.down_proj.weight = nn.Parameter(down_w)
+        self.experts = self.experts + self.divided_shared_experts
+        print("num experts: {}".format(len(self.experts)))
+
     def forward(self, inputs):
         try:
             _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
@@ -856,7 +878,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
 
         # Loop over all available experts in the model and perform the computation on each expert
         expert_outputs = []
-        for expert_idx in _prune_expert_idxs:
+        for expert_idx in _prune_expert_idxs + [60, 61, 62, 63]:
             expert_layer = self.experts[expert_idx]
             expert_output = expert_layer(hidden_states)
             expert_outputs.append(expert_output)
@@ -872,16 +894,8 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
             # # the `top_x` tensor here.
             # final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
 
-        if len(expert_outputs):  # 除了固定专家外还保留其他专家
-            stacked_tensors = torch.stack(expert_outputs)
-            final_hidden_states = torch.mean(stacked_tensors, dim=0)
-            shared_expert_output = self.shared_expert(hidden_states)
-            shared_expert_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * shared_expert_output
-            final_hidden_states = final_hidden_states + shared_expert_output
-        else:  # 只有固定专家
-            shared_expert_output = self.shared_expert(hidden_states)
-            shared_expert_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * shared_expert_output
-            final_hidden_states = shared_expert_output
+        stacked_tensors = torch.stack(expert_outputs)
+        final_hidden_states = torch.mean(stacked_tensors, dim=0)
 
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
         return final_hidden_states, router_logits
