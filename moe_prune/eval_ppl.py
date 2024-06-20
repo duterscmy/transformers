@@ -124,8 +124,9 @@ model = AutoModelForCausalLM.from_pretrained(
     # no_split_module_classes=[no_split_module_classes]
 )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
-for layer in model.model.layers and "qw27" in pytorch_checkpoint_path:
-    layer.mlp.split()
+if "qw27" in pytorch_checkpoint_path:
+    for layer in model.model.layers:
+        layer.mlp.split()
 
 
 # read benchmark
