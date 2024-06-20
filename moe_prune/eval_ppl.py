@@ -62,7 +62,21 @@ def apply_llama_chat_template(tokenizer, input_strs, sys_prompt):
     return input_str
 
 
-pytorch_checkpoint_path = "Qwen/Qwen1.5-MoE-A2.7B"
+parser = argparse.ArgumentParser()
+parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
+                    help="MTBench数据集路径")
+parser.add_argument("--model", default="./qw27",
+                    help="模型路径")
+parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
+parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
+parser.add_argument("--num_layer", type=int, default=24)
+parser.add_argument("--num_expert", type=int, default=64)
+parser.add_argument("--layer-mode", default="one_layer",
+                    help="如果指定，则只剪枝一层，否则累加前面所有层")
+
+args = parser.parse_args()
+
+pytorch_checkpoint_path = args.model
 # @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
 available_gpu_ids_str = "0"
 memory_per_gpu = "38GiB"  # @param ["", "38GiB"] {allow-input: true}
@@ -85,8 +99,7 @@ available_memory['cpu'] = cpu_memory
 print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
-#config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
-config = AutoConfig.from_pretrained("qw27")
+config = AutoConfig.from_pretrained(pytorch_checkpoint_path)
 #weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
 with init_empty_weights():
     model = AutoModelForCausalLM.from_config(config,
@@ -101,8 +114,7 @@ print('Inferred Device Map: \n', device_map)
 
 
 model = AutoModelForCausalLM.from_pretrained(
-    #"Qwen/Qwen1.5-MoE-A2.7B",
-    "qw27",
+    pytorch_checkpoint_path,
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     # offload_folder="offload",
@@ -110,20 +122,9 @@ model = AutoModelForCausalLM.from_pretrained(
     # dtype=eval(f'torch.{model_dtype}'),
     # no_split_module_classes=[no_split_module_classes]
 )
-#tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-MoE-A2.7B")
-tokenizer = AutoTokenizer.from_pretrained("qw27")
+tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 for layer in model.model.layers:
     layer.mlp.split()
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
-                    help="MTBench数据集路径")
-parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
-parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
-parser.add_argument("--layer-mode", default="one_layer",
-                    help="如果指定，则只剪枝一层，否则累加前面所有层")
-
-args = parser.parse_args()
 
 
 # read benchmark
@@ -139,11 +140,11 @@ raw_questions = list(map(lambda x: x["turns"][0], questions))
 
 batch_size = args.batch_size
 score_mode = args.score_mode
-num_layer = 24
-num_expert = 64
+num_layer = args.num_layer
+num_expert = args.num_expert
 
 layer_mode = args.layer_mode
-output_path = "qwen2.7b_score_{}_layer_mode_{}".format(score_mode, layer_mode)
+output_path = "{}_score_{}_layer_mode_{}".format(pytorch_checkpoint_path, score_mode, layer_mode)
 
 print(f"{pytorch_checkpoint_path} num_layer {num_layer} num_expert {num_expert}")
 if not os.path.exists(output_path):
@@ -160,27 +161,27 @@ elif score_mode == "ww_alpha":
     layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
     layer_idx_to_expert_idxs = {}
-    for layer_idx in range(32):
-        expert_idxs = list(range(64))
+    for layer_idx in range(num_layer):
+        expert_idxs = list(range(num_expert))
         random.shuffle(expert_idxs)
         layer_idx_to_expert_idxs[layer_idx] = expert_idxs
 
 
 # decode and eval ppl
 # no prune
-# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-# print("no prune mean_ppl {}".format(mean_ppl))
-# mean_ppl = mean_ppl.tolist()
-# output = {"mean_ppl": mean_ppl}
-# model_id = "noPrune"
-# output_filename = "{}.json".format(model_id)
-# output_filename = os.path.join(output_path, output_filename)
-# json.dump(output, open(output_filename, 'w'))
+mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+print("no prune mean_ppl {}".format(mean_ppl))
+mean_ppl = mean_ppl.tolist()
+output = {"mean_ppl": mean_ppl}
+model_id = "noPrune"
+output_filename = "{}.json".format(model_id)
+output_filename = os.path.join(output_path, output_filename)
+json.dump(output, open(output_filename, 'w'))
 
 # prune
 for prune_layer_num in [1, 2, 4, 8, 12, 24]:  # 对多少层/哪些层进行剪枝
     print("prune layer num {}".format(prune_layer_num))
-    for prune_expert_num in [8,4]:  # 保留的专家数量
+    for prune_expert_num in [4, 8,]:  # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
         prune_layer_idx_to_expert_idxs = {}
 
