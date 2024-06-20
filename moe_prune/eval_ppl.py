@@ -69,8 +69,8 @@ parser.add_argument("--model", default="./qw27",
                     help="模型路径")
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
-parser.add_argument("--num_layer", type=int, default=24, help="默认为qw16B层数")  # deepseek 27
-parser.add_argument("--num_expert", type=int, default=64, help="默认为qw16B专家数")
+parser.add_argument("--num-layer", type=int, default=24, help="默认为qw16B层数")  # deepseek 27
+parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
 parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
 
