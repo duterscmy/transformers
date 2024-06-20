@@ -11,7 +11,7 @@ model_path=/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base/
 # python moe_prune/eval_ppl.py --score-mode ww_alpha --layer-mode one_layer --model ${model_path}
 
 # prune by random, one layer
-python moe_prune/eval_ppl.py --score-mode random --layer-mode one_layer --model ${model_path}
+python moe_prune/eval_ppl.py --score-mode random --layer-mode one_layer --model ${model_path} --num-layer 27
 
 # prune by l1
 # python moe_prune/eval_ppl.py --score-mode l1 --layer-mode jump_layers --model ${model_path}
