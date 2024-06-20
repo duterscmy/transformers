@@ -53,9 +53,9 @@ from transformers.models.qwen2_moe.expert_idx import *
 from .configuration_deepseek import DeepseekConfig
 
 
-if is_flash_attn_2_available():
-    from flash_attn import flash_attn_func, flash_attn_varlen_func
-    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
+# if is_flash_attn_2_available():
+#     from flash_attn import flash_attn_func, flash_attn_varlen_func
+#     from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
 
 
 # This makes `_prepare_4d_causal_attention_mask` a leaf function in the FX graph.
