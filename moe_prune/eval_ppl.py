@@ -182,7 +182,7 @@ json.dump(output, open(output_filename, 'w'))
 
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
-for key,value in dynamic_weight_tmp:
+for key,value in dynamic_weight_tmp.items():
     key = key.split("-")
     layer_idx = int(key[0])
     expert_idx = int(key[1])
@@ -190,7 +190,7 @@ for key,value in dynamic_weight_tmp:
     if layer_idx not in dynamic_weights:
         dynamic_weights[layer_idx] = {}
     dynamic_weights[layer_idx][expert_idx] = w
-
+print(dynamic_weights)
 # prune
 for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
     print("prune layer num {}".format(prune_layer_num))
