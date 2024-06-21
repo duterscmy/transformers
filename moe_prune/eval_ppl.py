@@ -171,6 +171,7 @@ elif score_mode == "random":
 
 # decode and eval ppl
 # no prune
+layer_num_list.append(num_layer)
 mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
 print("no prune mean_ppl {}".format(mean_ppl))
 mean_ppl = mean_ppl.tolist()

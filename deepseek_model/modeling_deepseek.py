@@ -321,6 +321,11 @@ class MoEGate(nn.Module):
         flatten_weights = torch.flatten(topk_weight)
         flatten_idxs = torch.flatten(topk_idx)
         _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
+        global_layer_list[:] = []
+        if _global_layer == _layer_num-1:
+            global_layer_list.append(0)
+        else:
+            global_layer_list.append(_global_layer + 1)
         _layer_num = layer_num_list[-1]  # 模型的层数
         _relative_layer = _global_layer % _layer_num
         print(flatten_weights, flatten_idxs)
