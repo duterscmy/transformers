@@ -389,7 +389,7 @@ class DeepseekMoE(nn.Module):
             if _relative_layer in _prune_layer_idx_to_expert_idxs:
                 _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
                 print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
-                output = self.forward_prune(inputs, _prune_expert_idxs)
+                output = self.forward_prune(inputs, _prune_expert_idxs, _relative_layer)
             else:
                 print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
                 output = self.forward_route(inputs)
@@ -399,12 +399,17 @@ class DeepseekMoE(nn.Module):
             output = self.forward_route(inputs)
         return output
     
-    def forward_prune(self, hidden_states, _prune_expert_idxs):
+    def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
         outputs = []
         for _expert_idx in _prune_expert_idxs:
             output = self.experts[_expert_idx](identity)
-            outputs.append(output)
+            try:
+                expert_weight = dynamic_weights[_relative_layer][_expert_idx]
+            except:
+                print("no expert weight")
+                expert_weight = 0.06
+            outputs.append(output*expert_weight)
         
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))

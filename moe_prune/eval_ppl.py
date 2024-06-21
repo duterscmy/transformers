@@ -11,7 +11,7 @@ import json
 #import shortuuid
 import time
 
-from transformers.models.qwen2_moe.expert_idx import expert_idxs_list, global_layer_list, prune_layer_list, layer_num_list
+from transformers.models.qwen2_moe.expert_idx import *
 
 
 def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
@@ -180,8 +180,19 @@ output_filename = "{}.json".format(model_id)
 output_filename = os.path.join(output_path, output_filename)
 json.dump(output, open(output_filename, 'w'))
 
+# load dynamic weights
+dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
+for key,value in dynamic_weight_tmp:
+    key = key.split("-")
+    layer_idx = int(key[0])
+    expert_idx = int(key[1])
+    w = value[-1]
+    if layer_idx not in dynamic_weights:
+        dynamic_weights[layer_idx] = {}
+    dynamic_weights[layer_idx][expert_idx] = w
+
 # prune
-for prune_layer_num in [1, 2, 4, 8, 12, 24]:  # 对多少层/哪些层进行剪枝
+for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
     print("prune layer num {}".format(prune_layer_num))
     for prune_expert_num in [0, 6]: #4, 8,]:  # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
