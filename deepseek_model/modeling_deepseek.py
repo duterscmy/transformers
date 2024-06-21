@@ -407,7 +407,11 @@ class DeepseekMoE(nn.Module):
             try:
                 expert_weight = dynamic_weights[_relative_layer][_expert_idx]
             except:
-                print("no expert weight")
+                print(_relative_layer, _expert_idx)
+                print(dynamic_weights.keys())
+                print(dynamic_weights[_relative_layer].keys())
+                exit()
+                print("no expert weight，using 0.06")
                 expert_weight = 0.06
             outputs.append(output*expert_weight)
         
