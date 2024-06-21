@@ -171,14 +171,14 @@ elif score_mode == "random":
 
 # decode and eval ppl
 # no prune
-mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-print("no prune mean_ppl {}".format(mean_ppl))
-mean_ppl = mean_ppl.tolist()
-output = {"mean_ppl": mean_ppl}
-model_id = "noPrune"
-output_filename = "{}.json".format(model_id)
-output_filename = os.path.join(output_path, output_filename)
-json.dump(output, open(output_filename, 'w'))
+# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+# print("no prune mean_ppl {}".format(mean_ppl))
+# mean_ppl = mean_ppl.tolist()
+# output = {"mean_ppl": mean_ppl}
+# model_id = "noPrune"
+# output_filename = "{}.json".format(model_id)
+# output_filename = os.path.join(output_path, output_filename)
+# json.dump(output, open(output_filename, 'w'))
 
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
@@ -187,9 +187,7 @@ for key,value in dynamic_weight_tmp.items():
     layer_idx = int(key[0])
     expert_idx = int(key[1])
     w = value[-1]
-    if layer_idx not in dynamic_weights:
-        dynamic_weights[layer_idx] = {}
-    dynamic_weights[layer_idx][expert_idx] = w
+    dynamic_weights[(layer_idx, expert_idx)] = w
 print(dynamic_weights)
 # prune
 for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
