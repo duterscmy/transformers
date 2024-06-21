@@ -318,6 +318,26 @@ class MoEGate(nn.Module):
             denominator = topk_weight.sum(dim=-1, keepdim=True) + 1e-20
             topk_weight = topk_weight / denominator
 
+        flatten_weights = torch.flatten(topk_weight)
+        flatten_idxs = torch.flatten(topk_idx)
+        _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
+        _layer_num = layer_num_list[-1]  # 模型的层数
+        _relative_layer = _global_layer % _layer_num
+        print(flatten_weights, flatten_idxs)
+        for w, idx in zip(flatten_weights, flatten_idxs):
+            w = w.item()
+            idx = idx.item()
+            key = (_relative_layer, idx)
+            if key not in expert_idx_to_info:
+                expert_idx_to_info[key] = [w, 1]
+            else:
+                sum_w = expert_idx_to_info[key][0]
+                freq = expert_idx_to_info[key][1]
+                sum_w += w
+                freq += 1
+                expert_idx_to_info[key] = [sum_w, freq]
+
+        print(expert_idx_to_info)
         ### expert-level computation auxiliary loss
         if self.training and self.alpha > 0.0:
             scores_for_aux = scores
@@ -374,45 +394,8 @@ class DeepseekMoE(nn.Module):
             intermediate_size = config.moe_intermediate_size * config.n_shared_experts
             self.shared_experts = DeepseekMLP(config=config, intermediate_size = intermediate_size)
     
-    def forward(self, inputs):
-        try:
-            _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
-            _prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
-            _layer_num = layer_num_list[-1]  # 模型的层数
-            global_layer_list[:] = []
-            if _global_layer == _layer_num-1:
-                global_layer_list.append(0)
-            else:
-                global_layer_list.append(_global_layer + 1)
-            
-            _relative_layer = _global_layer % _layer_num
-            if _relative_layer in _prune_layer_idx_to_expert_idxs:
-                _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
-                print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
-                output = self.forward_prune(inputs, _prune_expert_idxs)
-            else:
-                print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
-                output = self.forward_route(inputs)
-        except Exception as e:
-            err_msg = traceback.format_exc()
-            print(e, err_msg)
-            output = self.forward_route(inputs)
-        return output
     
-    def forward_prune(self, hidden_states, _prune_expert_idxs):
-        identity = hidden_states
-        outputs = []
-        for _expert_idx in _prune_expert_idxs:
-            output = self.experts[_expert_idx](identity)
-            outputs.append(output)
-        
-        if self.config.n_shared_experts is not None:
-            outputs.append(self.shared_experts(identity))
-        outputs = torch.stack(outputs, dim=0)
-        outputs = torch.sum(outputs, dim=0)
-        return outputs
-    
-    def forward_route(self, hidden_states):
+    def forward(self, hidden_states):
         identity = hidden_states
         orig_shape = hidden_states.shape
         topk_idx, topk_weight, aux_loss = self.gate(hidden_states)
