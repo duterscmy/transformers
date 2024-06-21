@@ -313,11 +313,12 @@ class MoEGate(nn.Module):
         ### select top-k experts
         topk_weight, topk_idx = torch.topk(scores, k=self.top_k, dim=-1, sorted=False)
         
-        print(self.top_k)
         ### norm gate to sum 1
+        print("norm_topk_prob {}".format(self.norm_topk_prob))
         if self.top_k > 1 and self.norm_topk_prob:
             denominator = topk_weight.sum(dim=-1, keepdim=True) + 1e-20
             topk_weight = topk_weight / denominator
+        
         flatten_weights = torch.flatten(topk_weight)
         flatten_idxs = torch.flatten(topk_idx)
         _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
