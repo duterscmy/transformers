@@ -329,7 +329,7 @@ class MoEGate(nn.Module):
             global_layer_list.append(_global_layer + 1)
         
         _relative_layer = _global_layer % _layer_num
-        print(flatten_weights, flatten_idxs)
+        # print(flatten_weights, flatten_idxs)
         for w, idx in zip(flatten_weights, flatten_idxs):
             w = w.item()
             idx = idx.item()
@@ -343,7 +343,7 @@ class MoEGate(nn.Module):
                 freq += 1
                 expert_idx_to_info[key] = [sum_w, freq]
 
-        print(expert_idx_to_info)
+        # print(expert_idx_to_info)
         ### expert-level computation auxiliary loss
         if self.training and self.alpha > 0.0:
             scores_for_aux = scores

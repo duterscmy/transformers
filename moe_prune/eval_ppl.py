@@ -174,11 +174,14 @@ elif score_mode == "random":
 layer_num_list.append(num_layer)
 mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
 print("no prune mean_ppl {}".format(mean_ppl))
-mean_ppl = mean_ppl.tolist()
-output = {"mean_ppl": mean_ppl}
-model_id = "noPrune"
-output_filename = "{}.json".format(model_id)
-output_filename = os.path.join(output_path, output_filename)
-json.dump(output, open(output_filename, 'w'))
 
-print(expert_idx_to_info)
+new_expert_idx_to_info = {}
+for key, value in expert_idx_to_info.items():
+    new_key = "{}-{}".format(key[0], key[1])
+    ave_w = value[0] / value[1]
+    new_expert_idx_to_info[new_key] = ave_w
+
+output_filename = "dynamic_weight.json"
+json.dump(new_expert_idx_to_info, open(output_filename, 'w'))
+
+
