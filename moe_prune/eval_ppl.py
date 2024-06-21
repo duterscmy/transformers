@@ -179,7 +179,7 @@ new_expert_idx_to_info = {}
 for key, value in expert_idx_to_info.items():
     new_key = "{}-{}".format(key[0], key[1])
     ave_w = value[0] / value[1]
-    new_expert_idx_to_info[new_key] = ave_w
+    new_expert_idx_to_info[new_key] = [value[0], value[1], ave_w]
 
 output_filename = "dynamic_weight.json"
 json.dump(new_expert_idx_to_info, open(output_filename, 'w'))
