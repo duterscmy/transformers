@@ -65,12 +65,12 @@ def apply_llama_chat_template(tokenizer, input_strs, sys_prompt):
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
                     help="MTBench数据集路径")
-parser.add_argument("--model", default="./qw27",
+parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
-parser.add_argument("--num-layer", type=int, default=24,
-                    help="默认为qw16B层数")  # deepseek 27
+parser.add_argument("--num-layer", type=int, default=27,
+                    help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
 parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
@@ -201,13 +201,13 @@ layer_idx_list_ppl_order = [
     2, 8, 9, 10, 13, 15, 16, 20, 22, 23,
     19, 24, 25,
     3, 4, 5, 6,
-    1, 12, 14, 17, 21, 26, 27
+    12, 14, 17, 21, 26, 27, 1
 ]
 
 # prune
 
 # for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
-for prune_layer_num in [3, 6, 9 ,12]:
+for prune_layer_num in [15, 18, 21]:
     print("prune layer num {}".format(prune_layer_num))
     for prune_expert_num in [0]: # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
