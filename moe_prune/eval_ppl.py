@@ -223,6 +223,7 @@ for prune_layer_num in [3, 6, 9 ,12]:
             prune_layer_idx_list = list(range(0, 24, step))
         elif layer_mode == "ppl_order":
             prune_layer_idx_list = layer_idx_list_ppl_order[:prune_layer_num]
+            prune_layer_idx_list = list(map(lambda x: x-1, prune_layer_idx_list))
 
         for prune_layer_idx in prune_layer_idx_list:
             true_prune_num = prune_expert_num
