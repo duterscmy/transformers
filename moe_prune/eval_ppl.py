@@ -8,7 +8,7 @@ from typing import List, Optional
 import random
 import os
 import json
-#import shortuuid
+# import shortuuid
 import time
 
 from transformers.models.qwen2_moe.expert_idx import *
@@ -69,7 +69,8 @@ parser.add_argument("--model", default="./qw27",
                     help="模型路径")
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
-parser.add_argument("--num-layer", type=int, default=24, help="默认为qw16B层数")  # deepseek 27
+parser.add_argument("--num-layer", type=int, default=24,
+                    help="默认为qw16B层数")  # deepseek 27
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
 parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
@@ -99,8 +100,9 @@ available_memory['cpu'] = cpu_memory
 print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
-config = AutoConfig.from_pretrained(pytorch_checkpoint_path, trust_remote_code=True)
-#weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
+config = AutoConfig.from_pretrained(
+    pytorch_checkpoint_path, trust_remote_code=True)
+# weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
 with init_empty_weights():
     model = AutoModelForCausalLM.from_config(config,
                                              torch_dtype=eval(
@@ -146,7 +148,8 @@ num_layer = args.num_layer
 num_expert = args.num_expert
 
 layer_mode = args.layer_mode
-output_path = "{}_score_{}_layer_mode_{}".format(pytorch_checkpoint_path, score_mode, layer_mode)
+output_path = "{}_score_{}_layer_mode_{}".format(
+    pytorch_checkpoint_path, score_mode, layer_mode)
 
 print(f"{pytorch_checkpoint_path} num_layer {num_layer} num_expert {num_expert}")
 if not os.path.exists(output_path):
@@ -156,11 +159,13 @@ if not os.path.exists(output_path):
 if score_mode == "l1":
     layer_idx_to_expert_idxs = json.load(
         open("moe_prune/layer_idx_to_expert_idx.json", 'r'))
-    layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+    layer_idx_to_expert_idxs = {
+        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "ww_alpha":
     layer_idx_to_expert_idxs = json.load(
         open("moe_prune/layer_idx_to_expert_idx.alpha.json", 'r'))
-    layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+    layer_idx_to_expert_idxs = {
+        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
     layer_idx_to_expert_idxs = {}
     for layer_idx in range(num_layer):
@@ -182,17 +187,29 @@ elif score_mode == "random":
 
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
-for key,value in dynamic_weight_tmp.items():
+for key, value in dynamic_weight_tmp.items():
     key = key.split("-")
     layer_idx = int(key[0])
     expert_idx = int(key[1])
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
 print(dynamic_weights)
+
+# ppl order pruning single layer
+layer_idx_list_ppl_order = [
+    7, 11, 18,
+    2, 8, 9, 10, 13, 15, 16, 20, 22, 23,
+    19, 24, 25,
+    3, 4, 5, 6,
+    1, 12, 14, 17, 21, 26, 27
+]
+
 # prune
-for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
+
+# for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
+for prune_layer_num in [3, 6, 9 ,12]:
     print("prune layer num {}".format(prune_layer_num))
-    for prune_expert_num in [0, 6]: #4, 8,]:  # 保留的专家数量
+    for prune_expert_num in [0]: # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
         prune_layer_idx_to_expert_idxs = {}
 
@@ -204,6 +221,8 @@ for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
             # if num==5, then prune 0-4-8-12-16
             step = 24 // prune_layer_num
             prune_layer_idx_list = list(range(0, 24, step))
+        elif layer_mode == "ppl_order":
+            prune_layer_idx_list = layer_idx_list_ppl_order[:prune_layer_num]
 
         for prune_layer_idx in prune_layer_idx_list:
             true_prune_num = prune_expert_num
