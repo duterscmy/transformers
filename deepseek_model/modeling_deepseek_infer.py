@@ -454,7 +454,7 @@ class DeepseekMoE(nn.Module):
                     inputs, prune_expert_idxs, relative_layer)
             else:
                 print("layer_num {} current_layer {}, use ROUTE layer".format(
-                    self.layer_num, self.global_layer))
+                    self.layer_num, global_layer))
                 output = self.forward_route(inputs)
         except Exception as e:
             err_msg = traceback.format_exc()
