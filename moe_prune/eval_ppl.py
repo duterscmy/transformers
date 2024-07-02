@@ -207,9 +207,9 @@ layer_idx_list_ppl_order = [
 # prune
 
 # for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
-for prune_layer_num in [15, 18, 21]:
+for prune_layer_num in [3, 6, 9, 12, 15, 18, 21]:
     print("prune layer num {}".format(prune_layer_num))
-    for prune_expert_num in [0]: # 保留的专家数量
+    for prune_expert_num in [6]: # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
         prune_layer_idx_to_expert_idxs = {}
 
