@@ -74,6 +74,8 @@ parser.add_argument("--num-layer", type=int, default=27,
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
 parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
+parser.add_argument("--reverse-experts", action="store_true",
+                    help="如果指定，则剪枝时倒转expert顺序")
 
 args = parser.parse_args()
 
@@ -229,8 +231,8 @@ for prune_layer_num in [3, 6, 9, 12, 15, 18, 21]:
             true_prune_num = prune_expert_num
             prune_expert_idxs = layer_idx_to_expert_idxs[prune_layer_idx]
             prune_expert_idxs = list(map(int, prune_expert_idxs))
-            # prune_expert_idxs = list(
-            #     filter(lambda x: x not in (60, 61, 62, 63), prune_expert_idxs))
+            if args.reverse_experts:
+                prune_expert_idxs.reverse()
             prune_layer_idx_to_expert_idxs[prune_layer_idx] = prune_expert_idxs[:true_prune_num]
 
         print("prune layer idx to expert idxs {}".format(
