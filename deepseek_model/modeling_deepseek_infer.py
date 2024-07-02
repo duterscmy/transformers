@@ -449,7 +449,7 @@ class DeepseekMoE(nn.Module):
                 prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
                 prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
                 print("layer_num {} current_layer {}, use PUNE layer".format(
-                    self.layer_num, self.global_layer))
+                    self.layer_num, global_layer))
                 output = self.forward_prune(
                     inputs, prune_expert_idxs, relative_layer)
             else:
