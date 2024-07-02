@@ -422,7 +422,7 @@ class DeepseekMoE(nn.Module):
 
         # 层索引 to 专家索引序列（l1范数从小到大
         # current_dir = os.path.dirname(__file__)
-        current_dir = ""
+        current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
         expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.json")
         layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
         layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
@@ -442,6 +442,7 @@ class DeepseekMoE(nn.Module):
 
     def forward(self, inputs):
         try:
+            global global_layer
             relative_layer = global_layer % self.layer_num
             global_layer += 1
             if relative_layer in self.prune_layer_idxs:
