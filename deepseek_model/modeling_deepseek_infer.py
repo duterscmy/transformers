@@ -389,7 +389,7 @@ class AddAuxiliaryLoss(torch.autograd.Function):
                 1, dtype=ctx.dtype, device=grad_output.device)
         return grad_output, grad_loss
 
-
+global_layer = 0  # 整个推理脚本中调用layer对象的次数
 class DeepseekMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -407,7 +407,6 @@ class DeepseekMoE(nn.Module):
             self.shared_experts = DeepseekMLP(
                 config=config, intermediate_size=intermediate_size)
             
-        self.global_layer = 0  # 整个推理脚本中调用layer对象的次数
         self.layer_num = 27
         self.num_route_experts = 0
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
@@ -422,7 +421,8 @@ class DeepseekMoE(nn.Module):
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]  # 对这些层进行剪枝
 
         # 层索引 to 专家索引序列（l1范数从小到大
-        current_dir = os.path.dirname(__file__)
+        # current_dir = os.path.dirname(__file__)
+        current_dir = ""
         expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.json")
         layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
         layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
@@ -431,7 +431,7 @@ class DeepseekMoE(nn.Module):
         # 专家的动态权重
         dynamic_weights = {}
         dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
-        dynamic_weight_tmp = json.load(open(dynamic_weights, 'r'))
+        dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
         for key, value in dynamic_weight_tmp.items():
             key = key.split("-")
             layer_idx = int(key[0])
@@ -442,15 +442,15 @@ class DeepseekMoE(nn.Module):
 
     def forward(self, inputs):
         try:
-            _relative_layer = self.global_layer % self.layer_num
-            self.global_layer += 1
-            if _relative_layer in self.prune_layer_idxs:
-                _prune_expert_idxs = self.layer_idx_to_expert_idxs[_relative_layer]
-                _prune_expert_idxs = _prune_expert_idxs[:self.num_route_experts]
+            relative_layer = global_layer % self.layer_num
+            global_layer += 1
+            if relative_layer in self.prune_layer_idxs:
+                prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
+                prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
                 print("layer_num {} current_layer {}, use PUNE layer".format(
                     self.layer_num, self.global_layer))
                 output = self.forward_prune(
-                    inputs, _prune_expert_idxs, _relative_layer)
+                    inputs, prune_expert_idxs, relative_layer)
             else:
                 print("layer_num {} current_layer {}, use ROUTE layer".format(
                     self.layer_num, self.global_layer))
