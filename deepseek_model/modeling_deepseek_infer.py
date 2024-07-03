@@ -390,7 +390,10 @@ class AddAuxiliaryLoss(torch.autograd.Function):
                 1, dtype=ctx.dtype, device=grad_output.device)
         return grad_output, grad_loss
 
+
 global_layer = 0  # 整个推理脚本中调用layer对象的次数
+
+
 class DeepseekMoE(nn.Module):
     """
     A mixed expert module containing shared experts.
@@ -407,24 +410,21 @@ class DeepseekMoE(nn.Module):
             intermediate_size = config.moe_intermediate_size * config.n_shared_experts
             self.shared_experts = DeepseekMLP(
                 config=config, intermediate_size=intermediate_size)
-            
+
         self.layer_num = 27
         self.num_route_experts = 0
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
-        self.prune_layer_order = [
-            7, 11, 18,
-            2, 8, 9, 10, 13, 15, 16, 20, 22, 23,
-            19, 24, 25,
-            3, 4, 5, 6,
-            12, 14, 17, 21, 26, 27, 1
-        ]
+        self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
+                                  15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
         self.prune_layer_num = 3
-        self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]  # 对这些层进行剪枝
+        # 对这些层进行剪枝
+        self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
 
         # 层索引 to 专家索引序列（l1范数从小到大
         # current_dir = os.path.dirname(__file__)
         current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
-        expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.json")
+        expert_order_path = os.path.join(
+            current_dir, "layer_idx_to_expert_idx.json")
         # layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
         # layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
@@ -478,7 +478,8 @@ class DeepseekMoE(nn.Module):
                 expert_weight = self.dynamic_weights[(
                     _relative_layer, _expert_idx)]
             except:
-                print("layer {} expert {} 无预计算的动态权重".format(_relative_layer, _expert_idx))
+                print("layer {} expert {} 无预计算的动态权重".format(
+                    _relative_layer, _expert_idx))
                 # print(self.dynamic_weights.keys())
                 # print(self.dynamic_weights[_relative_layer].keys())
                 # exit()
