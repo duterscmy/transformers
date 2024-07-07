@@ -60,8 +60,8 @@ parser.add_argument("--batch-size", type=int, default=4, help="并行解码的�
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
-parser.add_argument("--layer-mode", default="one_layer",
-                    help="如果指定，则只剪枝一层，否则累加前面所有层")
+parser.add_argument("--prune-num-expert", default=0,
+                    help="剪枝后剩余的expert数量")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
 
@@ -136,14 +136,8 @@ batch_size = args.batch_size
 score_mode = args.score_mode
 num_layer = args.num_layer
 num_expert = args.num_expert
+prune_num_expert = args.prune_num_expert
 
-layer_mode = args.layer_mode
-output_path = "{}_score_{}_layer_mode_{}".format(
-    pytorch_checkpoint_path, score_mode, layer_mode)
-
-print(f"{pytorch_checkpoint_path} num_layer {num_layer} num_expert {num_expert}")
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
 
 # prune layer idx and expert idx
 if score_mode == "l1":
@@ -191,8 +185,8 @@ layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
 
 # prune
 prune_layer_idx_list = [11]
-beam_size = 6
-prune_expert_num = 0
+beam_size = 5
+prune_expert_num = prune_num_expert
 output_dict = {"expert_idxs": [],
                "ppl": [],
                "expert_num": []}
@@ -241,4 +235,5 @@ while (len(prune_layer_idx_list) < 12):
 
 print(output_dict)
 output_df = pd.DataFrame(output_dict)
-output_df.to_excel("greedy_search_layer_{}.xlsx".format(score_mode))
+output_df.to_excel("greedy_search_layer_score_mode_{}_prune_expert_num_{}_beam_size_{}.xlsx".format(
+    score_mode, prune_num_expert, beam_size))
