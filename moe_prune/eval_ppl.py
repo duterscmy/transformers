@@ -55,12 +55,14 @@ parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
                     help="MTBench数据集路径")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
-parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
-parser.add_argument("--prune-num-expert", default=0,
+
+
+parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
+parser.add_argument("--prune-num-expert", default=0, type=int,
                     help="剪枝后剩余的expert数量")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
@@ -186,7 +188,6 @@ layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
 # prune
 prune_layer_idx_list = [11]
 beam_size = 5
-prune_expert_num = prune_num_expert
 output_dict = {"expert_idxs": [],
                "ppl": [],
                "expert_num": []}
@@ -208,7 +209,7 @@ while (len(prune_layer_idx_list) < 12):
 
         prune_layer_idx_to_expert_idxs = {}  # 确定专家
         for prune_layer_idx in tmp_prune_layer_idx_list:
-            true_prune_num = prune_expert_num
+            true_prune_num = prune_num_expert
             prune_expert_idxs = layer_idx_to_expert_idxs[prune_layer_idx]
             prune_expert_idxs = list(map(int, prune_expert_idxs))
             if args.reverse_experts:
