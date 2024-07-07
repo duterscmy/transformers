@@ -235,8 +235,9 @@ while (len(prune_layer_idx_list) < 9):
                 prune_expert_idxs.reverse()
             prune_layer_idx_to_expert_idxs[prune_layer_idx] = prune_expert_idxs[:true_prune_num]
 
-        # print("prune layer idx to expert idxs {}".format(
-        #     prune_layer_idx_to_expert_idxs))
+        print("prune layer idx to expert idxs {}".format(
+            prune_layer_idx_to_expert_idxs))
+        exit()
         # update prune variables
         prune_layer_list.append(prune_layer_idx_to_expert_idxs)
         layer_num_list.append(num_layer)
