@@ -378,8 +378,7 @@ class DeepseekMoE(nn.Module):
         try:
             _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
             _prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
-            print(_prune_layer_idx_to_expert_idxs)
-            exit()
+            # print(_prune_layer_idx_to_expert_idxs)
             _layer_num = layer_num_list[-1]  # 模型的层数
             global_layer_list[:] = []
             if _global_layer == _layer_num-1:

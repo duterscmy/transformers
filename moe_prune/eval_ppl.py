@@ -237,7 +237,6 @@ while (len(prune_layer_idx_list) < 9):
 
         print("prune layer idx to expert idxs {}".format(
             prune_layer_idx_to_expert_idxs))
-        exit()
         # update prune variables
         prune_layer_list.append(prune_layer_idx_to_expert_idxs)
         layer_num_list.append(num_layer)
