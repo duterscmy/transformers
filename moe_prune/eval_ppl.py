@@ -185,10 +185,10 @@ print(dynamic_weights)
 if prune_num_expert == 0:
     layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
                                 15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
-if prune_num_expert == 6 and score_mode == "random":
+elif prune_num_expert == 6 and score_mode == "random":
     layer_idx_list_ppl_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
                                     24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
-if prune_num_expert == 6 and score_mode == "l1":
+elif prune_num_expert == 6 and score_mode == "l1":
     layer_idx_list_ppl_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
                                       2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
 
