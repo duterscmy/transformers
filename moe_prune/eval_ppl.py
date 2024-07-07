@@ -203,7 +203,6 @@ layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
                             15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
 
 # prune
-
 prune_layer_idx_list = [11]
 beam_size = 5
 prune_expert_num = 0
@@ -253,5 +252,6 @@ while (len(prune_layer_idx_list) < 9):
 
     prune_layer_idx_list = prune_layer_idx_list + [optimal_candidate_idx]
 
+print(output_dict)
 output_df = pd.DataFrame(output_dict)
 output_df.to_excel("greedy_search_layer.xlsx")
