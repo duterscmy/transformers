@@ -193,7 +193,7 @@ elif prune_num_expert == 6 and score_mode == "l1":
                                       2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
 
 # prune
-prune_layer_idx_list = [11]
+prune_layer_idx_list = [layer_idx_list_ppl_order[0]]
 beam_size = 5
 output_dict = {"expert_idxs": [],
                "ppl": [],
