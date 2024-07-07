@@ -424,15 +424,15 @@ class DeepseekMoE(nn.Module):
             self.prune_layer_order = [11, 10, 22, 7, 23,
                                       15, 18, 24, 2, 19, 20, 6]  # greedy search
         elif self.num_route_experts == 6 and self.score_mode == "random":
-            # self.prune_layer_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
-            #                         24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
+            self.prune_layer_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
+                                      24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
             self.prune_layer_order = [11, 7, 23, 22, 10,
                                       18, 15, 20, 24, 2, 19, 4]  # greedy search
         elif self.num_route_experts == 6 and self.score_mode == "l1":
             self.prune_layer_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
                                       2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
-            self.prune_layer_order = [11, 23, 10, 22, 7,
-                                      18, 15, 2, 24, 20, 8, 19]  # greedy search
+            self.prune_layer_order = [5, 22, 10, 7, 18,
+                                      8, 23, 2, 16, 24, 15, 20]  # greedy search
 
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
