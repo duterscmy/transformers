@@ -415,8 +415,9 @@ class DeepseekMoE(nn.Module):
         self.num_route_experts = 0
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
         if self.num_route_experts == 0:
-            self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
-                                    15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
+            # self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
+                                    # 15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
+            self.prune_layer_order = [11, 7, 23, 22, 10, 18, 15, 2, 24]
         elif self.num_route_experts == 6:
             self.prune_layer_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
                                     24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
