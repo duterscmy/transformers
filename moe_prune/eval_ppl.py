@@ -213,7 +213,7 @@ output_dict = {"expert_idxs": [],
 
 while (len(prune_layer_idx_list) < 9):
     print("the {}th iteration".format(len(prune_layer_idx_list)))
-    candidate_prune_layer_idx_list = [layer for layer in layer_idx_list_ppl_order
+    candidate_layer_idx_list = [layer for layer in layer_idx_list_ppl_order
                                       if layer not in prune_layer_idx_list]
     candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
     print("exist prune layers {}; candidate prune layers {}".format(
