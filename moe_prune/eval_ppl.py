@@ -50,19 +50,6 @@ def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
     return mean_ppl
 
 
-def apply_llama_chat_template(tokenizer, input_strs, sys_prompt):
-    # Use LLaMA's Chat Template(A bit diffrent from original one at the beginning part, we may correct it to the standard llama prompt template later)
-    # input_strs = [('user_input', 'user'), ('AI_response', 'assistant'), ...]
-    tokenizer.chat_template = "{% for message in messages %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + message['content'] + ' [/INST]' }}{% elif message['role'] == 'system' %}{{ '<<SYS>>\\n' + message['content'] + '\\n<</SYS>>\\n\\n' }}{% elif message['role'] == 'assistant' %}{{ ' '  + message['content'] + ' ' + eos_token }}{% endif %}{% endfor %}"
-    system_prompt = {'content': sys_prompt, 'role': 'system'}
-    chat = [system_prompt] + [{'content': input_str,
-                               'role': role} for input_str, role in input_strs]
-    input_str = tokenizer.apply_chat_template(chat,
-                                              tokenize=False,
-                                              add_generation_prompt=True)
-    return input_str
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
                     help="MTBench数据集路径")
@@ -204,16 +191,16 @@ layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
 
 # prune
 prune_layer_idx_list = [11]
-beam_size = 5
+beam_size = 6
 prune_expert_num = 0
 output_dict = {"expert_idxs": [],
                "ppl": [],
                "expert_num": []}
 
-while (len(prune_layer_idx_list) < 9):
+while (len(prune_layer_idx_list) < 12):
     print("the {}th iteration".format(len(prune_layer_idx_list)))
     candidate_layer_idx_list = [layer for layer in layer_idx_list_ppl_order
-                                      if layer not in prune_layer_idx_list]
+                                if layer not in prune_layer_idx_list]
     candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
     print("exist prune layers {}; candidate prune layers {}".format(
         prune_layer_idx_list, candidate_layer_idx_list))
@@ -254,4 +241,4 @@ while (len(prune_layer_idx_list) < 9):
 
 print(output_dict)
 output_df = pd.DataFrame(output_dict)
-output_df.to_excel("greedy_search_layer.xlsx")
+output_df.to_excel("greedy_search_layer_{}.xlsx".format(score_mode))
