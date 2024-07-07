@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pandas as pd
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
 import torch
@@ -203,26 +204,30 @@ layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
 
 # prune
 
-# for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
-for prune_layer_num in [3, 6, 9, 12, 15, 18, 21]:
-    print("prune layer num {}".format(prune_layer_num))
-    for prune_expert_num in [6]: # 保留的专家数量
-        print("prune expert num {}".format(prune_expert_num))
-        prune_layer_idx_to_expert_idxs = {}
+prune_layer_idx_list = [11]
+beam_size = 5
+prune_expert_num = 0
+output_dict = {"expert_idxs": [],
+               "ppl": [],
+               "expert_num": []}
 
-        if layer_mode == "one_layer":
-            prune_layer_idx_list = [prune_layer_num-1]
-        elif layer_mode == "continous_layers":
-            prune_layer_idx_list = list(range(prune_layer_num))
-        elif layer_mode == "jump_layers":
-            # if num==5, then prune 0-4-8-12-16
-            step = 24 // prune_layer_num
-            prune_layer_idx_list = list(range(0, 24, step))
-        elif layer_mode == "ppl_order":
-            prune_layer_idx_list = layer_idx_list_ppl_order[:prune_layer_num]
-            prune_layer_idx_list = list(map(lambda x: x-1, prune_layer_idx_list))
+while (len(prune_layer_idx_list) < 9):
+    print("the {}th iteration".format(len(prune_layer_idx_list)))
+    candidate_prune_layer_idx_list = [layer for layer in layer_idx_list_ppl_order
+                                      if layer not in prune_layer_idx_list]
+    candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
+    print("exist prune layers {}; candidate prune layers {}".format(
+        prune_layer_idx_list, candidate_layer_idx_list))
 
-        for prune_layer_idx in prune_layer_idx_list:
+    optimal_ppl = 1000000
+    optimal_candidate_idx = -1
+    for candidate_idx in candidate_layer_idx_list:
+        tmp_prune_layer_idx_list = prune_layer_idx_list + \
+            [candidate_idx]  # 确定layer
+        print("try to eval expert idx list {}".format(tmp_prune_layer_idx_list))
+
+        prune_layer_idx_to_expert_idxs = {}  # 确定专家
+        for prune_layer_idx in tmp_prune_layer_idx_list:
             true_prune_num = prune_expert_num
             prune_expert_idxs = layer_idx_to_expert_idxs[prune_layer_idx]
             prune_expert_idxs = list(map(int, prune_expert_idxs))
@@ -230,20 +235,23 @@ for prune_layer_num in [3, 6, 9, 12, 15, 18, 21]:
                 prune_expert_idxs.reverse()
             prune_layer_idx_to_expert_idxs[prune_layer_idx] = prune_expert_idxs[:true_prune_num]
 
-        print("prune layer idx to expert idxs {}".format(
-            prune_layer_idx_to_expert_idxs))
+        # print("prune layer idx to expert idxs {}".format(
+        #     prune_layer_idx_to_expert_idxs))
         # update prune variables
         prune_layer_list.append(prune_layer_idx_to_expert_idxs)
         layer_num_list.append(num_layer)
 
         # eval ppl on benchmark
         mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-        print("mean_ppl {}".format(mean_ppl))
-        mean_ppl = mean_ppl.tolist()
-        output = {"mean_ppl": mean_ppl}
-        # expert_idxs_str = expert_idxs
-        model_id = "pruneLayerNum{}_pruneExpertNum{}".format(
-            prune_layer_num, prune_expert_num)
-        output_filename = "{}.json".format(model_id)
-        output_filename = os.path.join(output_path, output_filename)
-        json.dump(output, open(output_filename, 'w'))
+        output_dict["ppl"].append(mean_ppl)
+        output_dict["expert_idxs"].append(tmp_prune_layer_idx_list)
+        output_dict["expert_num"].append(len(tmp_prune_layer_idx_list))
+
+        if mean_ppl < optimal_ppl:
+            optimal_ppl = mean_ppl
+            optimal_candidate_idx = candidate_idx
+
+    prune_layer_idx_list = prune_layer_idx_list + [optimal_candidate_idx]
+
+output_df = pd.DataFrame(output_dict)
+output_df.to_excel("greedy_search_layer.xlsx")
