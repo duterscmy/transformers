@@ -198,13 +198,8 @@ for key, value in dynamic_weight_tmp.items():
 print(dynamic_weights)
 
 # ppl order pruning single layer
-layer_idx_list_ppl_order = [
-    7, 11, 18,
-    2, 8, 9, 10, 13, 15, 16, 20, 22, 23,
-    19, 24, 25,
-    3, 4, 5, 6,
-    12, 14, 17, 21, 26, 27, 1
-]
+layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
+                            15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
 
 # prune
 
