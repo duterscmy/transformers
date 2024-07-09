@@ -40,9 +40,9 @@ def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
         with torch.no_grad():
             outputs = model(input_ids, labels=input_ids)
             loss = outputs.loss.mean()
-            print("mean loss {}".format(loss))
+            # print("mean loss {}".format(loss))
         loss_sum += loss.item()
-        print("loss sum {}".format(loss_sum))
+        # print("loss sum {}".format(loss_sum))
 
     mean_loss = loss_sum / num_texts  # 计算整个数据集的损失均值
     mean_ppl = torch.exp(torch.tensor(mean_loss))
