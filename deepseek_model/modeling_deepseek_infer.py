@@ -442,9 +442,13 @@ class DeepseekMoE(nn.Module):
         # 层索引 to 专家索引序列
         # current_dir = os.path.dirname(__file__)
         current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
-        expert_order_path = os.path.join(
-            current_dir, "layer_idx_to_expert_idx.json")
         if self.score_mode == "l1":
+            expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.json")
+            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+            layer_idx_to_expert_idxs = {
+                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+        elif self.score_mode == "distribution":
+            expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.distribution.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
