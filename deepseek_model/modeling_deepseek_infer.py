@@ -416,7 +416,7 @@ class DeepseekMoE(nn.Module):
         self.prune_layer_num = 3
 
         # self.score_mode = "random"
-        self.score_mode = "l1"
+        self.score_mode = "distribute"
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
         if self.num_route_experts == 0:
             # self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
@@ -433,6 +433,8 @@ class DeepseekMoE(nn.Module):
                                       2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
             self.prune_layer_order = [5, 22, 10, 7, 18,
                                       8, 23, 2, 16, 24, 15, 20]  # greedy search
+        elif self.score_mode == "distribute":
+            self.prune_layer_order = [15, 7, 22, 10, 18, 2, 23, 24, 20, 6, 19, 8] # greedy search
 
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
