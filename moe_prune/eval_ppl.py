@@ -144,17 +144,17 @@ prune_num_expert = args.prune_num_expert
 # prune layer idx and expert idx
 if score_mode == "l1":
     layer_idx_to_expert_idxs = json.load(
-        open("moe_prune/layer_idx_to_expert_idx.json", 'r'))
+        open("deepseek_model/layer_idx_to_expert_idx.json", 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "ww_alpha":
     layer_idx_to_expert_idxs = json.load(
-        open("moe_prune/layer_idx_to_expert_idx.alpha.json", 'r'))
+        open("deepseek_model/layer_idx_to_expert_idx.alpha.json", 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "distribution":
     layer_idx_to_expert_idxs = json.load(
-        open("moe_prune/layer_idx_to_expert_idx.distribution.json", 'r'))
+        open("deepseek_model/layer_idx_to_expert_idx.distribution.json", 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
