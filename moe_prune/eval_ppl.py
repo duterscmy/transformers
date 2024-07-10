@@ -161,7 +161,7 @@ output_dict = {"expert_idxs": [],
 while (len(prune_expert_idx_list) < 6):
     print("the {}th iteration".format(len(prune_expert_idx_list)))
     candidate_expert_idx_list = [expert for expert in range(64)
-                                if layer not in prune_expert_idx_list]
+                                if expert not in prune_expert_idx_list]
     # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
     print("exist prune experts {}; candidate prune experts {}".format(
         prune_expert_idx_list, candidate_expert_idx_list))
