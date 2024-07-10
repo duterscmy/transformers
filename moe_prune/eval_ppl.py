@@ -194,7 +194,7 @@ while (len(prune_expert_idx_list) < 6):
         end_time = time.time()
         print("eval ppl cost {} seconds".format(end_time-start_time))
 
-    prune_layer_idx_list = prune_layer_idx_list + [optimal_candidate_idx]
+    prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
 print(output_dict)
 output_df = pd.DataFrame(output_dict)
