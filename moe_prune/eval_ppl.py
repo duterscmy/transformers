@@ -130,6 +130,11 @@ with open(args.input, 'r') as fp:
             questions.append(question)
 raw_questions = list(map(lambda x: x["turns"][0], questions))
 
+# output path
+output_dir = "greedy_search_expert_output"
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+
 
 batch_size = args.batch_size
 num_layer = args.num_layer
@@ -171,11 +176,12 @@ while (len(prune_expert_idx_list) < 6):
             [candidate_idx]  # 确定layer
         print("try to eval expert idx list {}".format(tmp_prune_expert_idx_list))
 
-        prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
-        print("prune layer idx to expert idxs {}".format(
-            prune_layer_idx_to_expert_idxs))
-        # update prune variables
-        prune_layer_list.append(prune_layer_idx_to_expert_idxs)
+        # prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
+        # print("prune layer idx to expert idxs {}".format(
+        #     prune_layer_idx_to_expert_idxs))
+        
+        # interpolate model
+        model.xxxx.interpolate(tmp_prune_expert_idx_list)  # add extra expert to shared experts
         layer_num_list.append(num_layer)
 
         # eval ppl on benchmark
@@ -195,4 +201,5 @@ while (len(prune_expert_idx_list) < 6):
 
 print(output_dict)
 output_df = pd.DataFrame(output_dict)
-output_df.to_excel("greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
+output_file = os.path.join(output_dir, "greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
+output_df.to_excel(output_file)

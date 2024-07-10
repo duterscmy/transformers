@@ -373,6 +373,9 @@ class DeepseekMoE(nn.Module):
         if config.n_shared_experts is not None:
             intermediate_size = config.moe_intermediate_size * config.n_shared_experts
             self.shared_experts = DeepseekMLP(config=config, intermediate_size = intermediate_size)
+
+    def interpolate(expert_idxs):
+        
     
     def forward(self, inputs):
         try:
