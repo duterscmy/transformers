@@ -419,23 +419,29 @@ class DeepseekMoE(nn.Module):
         self.score_mode = "distribute"
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
         if self.num_route_experts == 0:
-            # self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
-            # 15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
-            self.prune_layer_order = [11, 10, 22, 7, 23,
-                                      15, 18, 24, 2, 19, 20, 6]  # greedy search
+            self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
+                                      15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
+            # self.prune_layer_order = [11, 10, 22, 7, 23,
+            #                           15, 18, 24, 2, 19, 20, 6]  # greedy search
         elif self.num_route_experts == 6 and self.score_mode == "random":
             self.prune_layer_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
                                       24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
-            self.prune_layer_order = [11, 7, 23, 22, 10,
-                                      18, 15, 20, 24, 2, 19, 4]  # greedy search
+            # self.prune_layer_order = [11, 7, 23, 22, 10,
+            #                           18, 15, 20, 24, 2, 19, 4]  # greedy search
         elif self.num_route_experts == 6 and self.score_mode == "l1":
             self.prune_layer_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
                                       2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
-            self.prune_layer_order = [5, 22, 10, 7, 18,
-                                      8, 23, 2, 16, 24, 15, 20]  # greedy search
+            # self.prune_layer_order = [5, 22, 10, 7, 18,
+            #                           8, 23, 2, 16, 24, 15, 20]  # greedy search
         elif self.score_mode == "distribute":
-            self.prune_layer_order = [15, 7, 22, 10, 18, 2, 23, 24, 20, 6, 19, 8] # greedy search
+            self.prune_layer_order = [15, 10, 7, 18, 8, 2, 22, 16, 23, 11,
+                                      20, 24, 13, 6, 19, 25, 4, 3, 5, 1, 27, 9, 21, 17, 12, 26, 14]
+            # self.prune_layer_order = [15, 7, 22, 10, 18,
+            #                           2, 23, 24, 20, 6, 19, 8]  # greedy search
 
+        # 校对偏移
+        self.prune_layer_order = [layer-1 for layer in self.prune_layer_order]
+        
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
 
@@ -443,12 +449,14 @@ class DeepseekMoE(nn.Module):
         # current_dir = os.path.dirname(__file__)
         current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
         if self.score_mode == "l1":
-            expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.json")
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         elif self.score_mode == "distribution":
-            expert_order_path = os.path.join(current_dir, "layer_idx_to_expert_idx.distribution.json")
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.distribution.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
