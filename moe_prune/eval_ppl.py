@@ -122,7 +122,6 @@ if "qw27" in pytorch_checkpoint_path:
     for layer in model.model.layers:
         layer.mlp.split()
 
-
 # read benchmark
 with open(args.input, 'r') as fp:
     questions = []
@@ -135,46 +134,9 @@ raw_questions = list(map(lambda x: x["turns"][0], questions))
 
 
 batch_size = args.batch_size
-score_mode = args.score_mode
 num_layer = args.num_layer
 num_expert = args.num_expert
 prune_num_expert = args.prune_num_expert
-
-
-# prune layer idx and expert idx
-if score_mode == "l1":
-    layer_idx_to_expert_idxs = json.load(
-        open("deepseek_model/layer_idx_to_expert_idx.json", 'r'))
-    layer_idx_to_expert_idxs = {
-        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-elif score_mode == "ww_alpha":
-    layer_idx_to_expert_idxs = json.load(
-        open("deepseek_model/layer_idx_to_expert_idx.alpha.json", 'r'))
-    layer_idx_to_expert_idxs = {
-        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-elif score_mode == "distribution":
-    layer_idx_to_expert_idxs = json.load(
-        open("deepseek_model/layer_idx_to_expert_idx.distribution.json", 'r'))
-    layer_idx_to_expert_idxs = {
-        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-elif score_mode == "random":
-    layer_idx_to_expert_idxs = {}
-    for layer_idx in range(num_layer):
-        expert_idxs = list(range(num_expert))
-        random.shuffle(expert_idxs)
-        layer_idx_to_expert_idxs[layer_idx] = expert_idxs
-
-
-# decode and eval ppl
-# no prune
-# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-# print("no prune mean_ppl {}".format(mean_ppl))
-# mean_ppl = mean_ppl.tolist()
-# output = {"mean_ppl": mean_ppl}
-# model_id = "noPrune"
-# output_filename = "{}.json".format(model_id)
-# output_filename = os.path.join(output_path, output_filename)
-# json.dump(output, open(output_filename, 'w'))
 
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
@@ -186,50 +148,33 @@ for key, value in dynamic_weight_tmp.items():
     dynamic_weights[(layer_idx, expert_idx)] = w
 print(dynamic_weights)
 
-# ppl order pruning single layer
-if prune_num_expert == 0:
-    layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
-                                15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
-elif prune_num_expert == 6 and score_mode == "random":
-    layer_idx_list_ppl_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
-                                24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
-elif prune_num_expert == 6 and score_mode == "l1":
-    layer_idx_list_ppl_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
-                                2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
-elif prune_num_expert == 6 and score_mode == "distribution":
-    layer_idx_list_ppl_order = [15, 10, 7, 18, 8, 2, 22, 16, 23, 11,
-                                20, 24, 13, 6, 19, 25, 4, 3, 5, 1, 27, 9, 21, 17, 12, 26, 14]
+
+
 # prune
-prune_layer_idx_list = [layer_idx_list_ppl_order[0]]
-beam_size = 5
+prune_layer_idx = 0 # 每次只剪枝一层，逐层看效果
+prune_expert_idx_list = []  # greedy search expert list
+# beam_size = 5
 output_dict = {"expert_idxs": [],
                "ppl": [],
                "expert_num": []}
 
-while (len(prune_layer_idx_list) < 12):
-    print("the {}th iteration".format(len(prune_layer_idx_list)))
-    candidate_layer_idx_list = [layer for layer in layer_idx_list_ppl_order
-                                if layer not in prune_layer_idx_list]
-    candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
-    print("exist prune layers {}; candidate prune layers {}".format(
-        prune_layer_idx_list, candidate_layer_idx_list))
+while (len(prune_expert_idx_list) < 6):
+    print("the {}th iteration".format(len(prune_expert_idx_list)))
+    candidate_expert_idx_list = [expert for expert in range(64)
+                                if layer not in prune_expert_idx_list]
+    # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
+    print("exist prune experts {}; candidate prune experts {}".format(
+        prune_expert_idx_list, candidate_expert_idx_list))
 
     optimal_ppl = 1000000
     optimal_candidate_idx = -1
-    for candidate_idx in candidate_layer_idx_list:
-        tmp_prune_layer_idx_list = prune_layer_idx_list + \
+    for candidate_idx in candidate_expert_idx_list:
+        start_time = time.time()
+        tmp_prune_expert_idx_list = prune_expert_idx_list + \
             [candidate_idx]  # 确定layer
-        print("try to eval expert idx list {}".format(tmp_prune_layer_idx_list))
+        print("try to eval expert idx list {}".format(tmp_prune_expert_idx_list))
 
-        prune_layer_idx_to_expert_idxs = {}  # 确定专家
-        for prune_layer_idx in tmp_prune_layer_idx_list:
-            true_prune_num = prune_num_expert
-            prune_expert_idxs = layer_idx_to_expert_idxs[prune_layer_idx]
-            prune_expert_idxs = list(map(int, prune_expert_idxs))
-            if args.reverse_experts:
-                prune_expert_idxs.reverse()
-            prune_layer_idx_to_expert_idxs[prune_layer_idx] = prune_expert_idxs[:true_prune_num]
-
+        prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
         print("prune layer idx to expert idxs {}".format(
             prune_layer_idx_to_expert_idxs))
         # update prune variables
@@ -239,16 +184,18 @@ while (len(prune_layer_idx_list) < 12):
         # eval ppl on benchmark
         mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
         output_dict["ppl"].append(mean_ppl)
-        output_dict["expert_idxs"].append(tmp_prune_layer_idx_list)
-        output_dict["expert_num"].append(len(tmp_prune_layer_idx_list))
+        output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
+        output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
 
         if mean_ppl < optimal_ppl:
             optimal_ppl = mean_ppl
             optimal_candidate_idx = candidate_idx
 
+        end_time = time.time()
+        print("eval ppl cost {} seconds".format(end_time-start_time))
+
     prune_layer_idx_list = prune_layer_idx_list + [optimal_candidate_idx]
 
 print(output_dict)
 output_df = pd.DataFrame(output_dict)
-output_df.to_excel("greedy_search_layer_score_mode_{}_prune_expert_num_{}_beam_size_{}.xlsx".format(
-    score_mode, prune_num_expert, beam_size))
+output_df.to_excel("greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
