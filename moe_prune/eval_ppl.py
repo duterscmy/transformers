@@ -192,7 +192,7 @@ while (len(prune_expert_idx_list) < 6):
             optimal_candidate_idx = candidate_idx
 
         end_time = time.time()
-        print("eval ppl cost {} seconds".format(end_time-start_time))
+        print("ppl {}, best_ppl {}, eval ppl cost {} seconds".format(mean_ppl, optimal_ppl, end_time-start_time))
 
     prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
