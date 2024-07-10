@@ -60,10 +60,8 @@ parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
 
-
-parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
-parser.add_argument("--prune-num-expert", default=0, type=int,
-                    help="剪枝后剩余的expert数量")
+parser.add_argument("--prune-layer", default=0, type=int,
+                    help="选定一层进行剪枝")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
 
@@ -151,9 +149,8 @@ print(dynamic_weights)
 
 
 # prune
-prune_layer_idx = 0 # 每次只剪枝一层，逐层看效果
+prune_layer_idx = int(args.prune_layer) # 每次只剪枝一层，逐层看效果
 prune_expert_idx_list = []  # greedy search expert list
-# beam_size = 5
 output_dict = {"expert_idxs": [],
                "ppl": [],
                "expert_num": []}
