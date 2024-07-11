@@ -244,7 +244,7 @@ while (len(prune_layer_idx_list) < 12):
         output_dict["ppl"].append(mean_ppl)
         output_dict["expert_idxs"].append(tmp_prune_layer_idx_list)
         output_dict["expert_num"].append(len(tmp_prune_layer_idx_list))
-
+        print("ppl {}".format(mean_ppl))
         if mean_ppl < optimal_ppl:
             optimal_ppl = mean_ppl
             optimal_candidate_idx = candidate_idx
