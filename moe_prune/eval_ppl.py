@@ -134,7 +134,7 @@ raw_questions = list(map(lambda x: x["turns"][0], questions))
 batch_size = args.batch_size
 num_layer = args.num_layer
 num_expert = args.num_expert
-prune_num_expert = args.prune_num_expert
+# prune_num_expert = args.prune_num_expert
 
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
