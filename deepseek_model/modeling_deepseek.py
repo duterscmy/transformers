@@ -373,7 +373,21 @@ class DeepseekMoE(nn.Module):
         if config.n_shared_experts is not None:
             intermediate_size = config.moe_intermediate_size * config.n_shared_experts
             self.shared_experts = DeepseekMLP(config=config, intermediate_size = intermediate_size)
+
+        # 剪枝后的六个专家的权重
+        self.prune_experts_weights = nn.ModuleList([nn.Parameter(torch.randn(1, dtype=torch.float32)) for i in range(6)])
     
+    def set_expert_weights(self, statistic_weights):
+        # extract prune experts
+        for idx, weight in enumerate(statistic_weights):
+            self.prune_experts_weights[idx].data = weight
+            self.prune_experts_weights[idx].requires_grad = True
+    def return_expert_weights(self,):
+        res = []
+        for weight in self.prune_experts_weights:
+            res.append(weight.data)
+        return res
+
     def forward(self, inputs):
         try:
             _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数

@@ -165,17 +165,6 @@ elif score_mode == "random":
         layer_idx_to_expert_idxs[layer_idx] = expert_idxs
 
 
-# decode and eval ppl
-# no prune
-# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-# print("no prune mean_ppl {}".format(mean_ppl))
-# mean_ppl = mean_ppl.tolist()
-# output = {"mean_ppl": mean_ppl}
-# model_id = "noPrune"
-# output_filename = "{}.json".format(model_id)
-# output_filename = os.path.join(output_path, output_filename)
-# json.dump(output, open(output_filename, 'w'))
-
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
 for key, value in dynamic_weight_tmp.items():
