@@ -212,4 +212,5 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     for name, param in layer.mlp.named_parameters():
         print(name, param.requires_grad)
     print(prune_expert_weight_list)
-    print(layer.mlp.prune_experts_weights)
+    for w in layer.mlp.prune_experts_weights:
+        print(w.data)
