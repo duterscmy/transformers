@@ -380,13 +380,11 @@ class DeepseekMoE(nn.Module):
             self.register_parameter(f'prune_experts_weights_{i}', param)
 
     def set_expert_weights(self, statistic_weights):
-        # print(statistic_weights)
-        # print(len(self.prune_experts_weights))
         # extract prune experts
-        with torch.no_grad():
-            for idx, weight in enumerate(statistic_weights):
+        for idx, weight in enumerate(statistic_weights):
+            with torch.no_grad():
                 self.prune_experts_weights[idx].copy_(weight)
-                self.prune_experts_weights[idx].requires_grad = True
+            self.prune_experts_weights[idx].requires_grad = True
     def return_expert_weights(self,):
         res = []
         for weight in self.prune_experts_weights:
