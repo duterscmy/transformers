@@ -136,6 +136,7 @@ with open(args.input, 'r') as fp:
         line = line.strip()
         if line:
             questions.append(line)
+raw_questions = questions
 
 
 batch_size = args.batch_size
