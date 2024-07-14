@@ -249,7 +249,6 @@ training_args = TrainingArguments(
     save_steps=1000000,                 # 保存检查点的步数
     save_total_limit=2,              # 保存检查点的最大数量
     logging_steps=10,                # 日志记录的步数
-    display_progress_bar=True        # 显示进度条
 )
 # 初始化Trainer
 trainer = Trainer(
