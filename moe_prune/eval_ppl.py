@@ -49,22 +49,10 @@ def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
     return mean_ppl
 
 
-def apply_llama_chat_template(tokenizer, input_strs, sys_prompt):
-    # Use LLaMA's Chat Template(A bit diffrent from original one at the beginning part, we may correct it to the standard llama prompt template later)
-    # input_strs = [('user_input', 'user'), ('AI_response', 'assistant'), ...]
-    tokenizer.chat_template = "{% for message in messages %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + message['content'] + ' [/INST]' }}{% elif message['role'] == 'system' %}{{ '<<SYS>>\\n' + message['content'] + '\\n<</SYS>>\\n\\n' }}{% elif message['role'] == 'assistant' %}{{ ' '  + message['content'] + ' ' + eos_token }}{% endif %}{% endfor %}"
-    system_prompt = {'content': sys_prompt, 'role': 'system'}
-    chat = [system_prompt] + [{'content': input_str,
-                               'role': role} for input_str, role in input_strs]
-    input_str = tokenizer.apply_chat_template(chat,
-                                              tokenize=False,
-                                              add_generation_prompt=True)
-    return input_str
-
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
-                    help="MTBench数据集路径")
+parser.add_argument("--input", default="datasets/sample_questions_from_6_dataset.txt",
+                    help="MTBench数据集路径") # ./moe_prune/data/questions.jsonl
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
@@ -134,14 +122,20 @@ if "qw27" in pytorch_checkpoint_path:
 
 
 # read benchmark
+# with open(args.input, 'r') as fp:
+#     questions = []
+#     for line in fp:
+#         line = line.strip()
+#         if line:
+#             question = json.loads(line)
+#             questions.append(question)
+# raw_questions = list(map(lambda x: x["turns"][0], questions))
 with open(args.input, 'r') as fp:
     questions = []
     for line in fp:
         line = line.strip()
         if line:
-            question = json.loads(line)
-            questions.append(question)
-raw_questions = list(map(lambda x: x["turns"][0], questions))
+            questions.append(line)
 
 
 batch_size = args.batch_size
