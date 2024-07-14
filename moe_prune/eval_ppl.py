@@ -64,6 +64,7 @@ parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
+parser.add_argument("--no-prune", action="store_true")
 
 args = parser.parse_args()
 
@@ -178,14 +179,16 @@ elif score_mode == "random":
 
 # decode and eval ppl
 # no prune
-# mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-# print("no prune mean_ppl {}".format(mean_ppl))
-# mean_ppl = mean_ppl.tolist()
-# output = {"mean_ppl": mean_ppl}
-# model_id = "noPrune"
-# output_filename = "{}.json".format(model_id)
-# output_filename = os.path.join(output_path, output_filename)
-# json.dump(output, open(output_filename, 'w'))
+if args.no_prune:
+    mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+    print("no prune mean_ppl {}".format(mean_ppl))
+    mean_ppl = mean_ppl.tolist()
+    output = {"mean_ppl": mean_ppl}
+    model_id = "noPrune"
+    output_filename = "{}.json".format(model_id)
+    output_filename = os.path.join(output_path, output_filename)
+    json.dump(output, open(output_filename, 'w'))
+    exit()
 
 # load dynamic weights
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
