@@ -205,6 +205,9 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     layer.mlp.set_expert_weights(prune_expert_weight_list)
 
     # print
+    for weight in layer.mlp.prune_experts_weights:
+        weight.requires_grad = True
+
     print("layer {}".format(prune_layer_idx))
     for name, param in layer.mlp.named_parameters():
         print(name, param.requires_grad)
