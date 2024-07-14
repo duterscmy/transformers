@@ -211,7 +211,7 @@ for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
         prune_layer_idx_to_expert_idxs = {}
 
         if layer_mode == "one_layer":
-            prune_layer_idx_list = [prune_layer_num-1]
+            prune_layer_idx_list = [prune_layer_num-1]  # idx = idx -1
         elif layer_mode == "continous_layers":
             prune_layer_idx_list = list(range(prune_layer_num))
         elif layer_mode == "jump_layers":
