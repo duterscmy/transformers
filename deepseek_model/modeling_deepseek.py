@@ -375,8 +375,10 @@ class DeepseekMoE(nn.Module):
             self.shared_experts = DeepseekMLP(config=config, intermediate_size = intermediate_size)
 
         # 剪枝后的六个专家的权重
-        self.prune_experts_weights = nn.ModuleList([nn.Parameter(torch.randn(1, dtype=torch.float32)) for i in range(6)])
-    
+        self.prune_experts_weights = [nn.Parameter(torch.randn(1, dtype=torch.float32)) for i in range(6)]
+        for i, param in enumerate(self.prune_experts_weights):
+            self.register_parameter(f'prune_experts_weights_{i}', param)
+
     def set_expert_weights(self, statistic_weights):
         # extract prune experts
         for idx, weight in enumerate(statistic_weights):
