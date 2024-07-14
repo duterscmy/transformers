@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
+from transformers import AutoTokenizer
+from datasets import load_dataset
 import pandas as pd
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
@@ -55,7 +58,7 @@ parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.head2k.
                     help="finetune data")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
-parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
+parser.add_argument("--batch-size", type=int, default=1, help="并行解码的样本数量")
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
@@ -169,26 +172,26 @@ if prune_num_expert == 0:
     #                             15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
     # layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [10, 17, 22, 1, 12,
-                                      21, 6, 15, 7, 19, 24, 9]
+                                21, 6, 15, 7, 19, 24, 9]
 elif prune_num_expert == 6 and score_mode == "random":
     # layer_idx_list_ppl_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
     #                             24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
     # layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [10, 17, 22, 1, 9,
-                                      6, 21, 15, 12, 14, 19, 7]
+                                6, 21, 15, 12, 14, 19, 7]
 elif prune_num_expert == 6 and score_mode == "l1":
     layer_idx_list_ppl_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
                                 2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
     layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [4, 17, 21, 10, 22,
-                                      12, 7, 15, 9, 19, 6, 18]
+                                12, 7, 15, 9, 19, 6, 18]
 elif prune_num_expert == 6 and score_mode == "distribution":
     layer_idx_list_ppl_order = [15, 10, 7, 18, 8, 2, 22, 16, 23, 11,
                                 20, 24, 13, 6, 19, 25, 4, 3, 5, 1, 27, 9, 21, 17, 12, 26, 14]
     layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [14, 9, 1, 21, 22,
-                                      6, 17, 10, 12, 7, 15, 24]
-    
+                                6, 17, 10, 12, 7, 15, 24]
+
 
 # add expert weight to prune layer
 for param in model.parameters():
@@ -214,3 +217,45 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     print(prune_expert_weight_list)
     for w in layer.mlp.prune_experts_weights:
         print(w.data)
+
+
+# finetune
+# 加载数据集
+dataset = load_dataset('json', data_files=[
+                       'datasets/c4-train.00000-of-01024.head2k.json'])
+
+
+# 假设你正在使用GPT-2模型（你可以根据需要更改为其他模型）
+tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
+# 定义tokenize函数
+
+
+def tokenize_function(examples):
+    return tokenizer(examples['text'], padding="max_length", truncation=True, max_length=128)
+
+
+# 应用tokenize函数
+tokenized_datasets = dataset.map(tokenize_function, batched=True)
+# 设置格式化输出
+tokenized_datasets.set_format(
+    type='torch', columns=['input_ids', 'attention_mask'])
+
+# 设置训练参数
+training_args = TrainingArguments(
+    output_dir='./finetune_output',          # 输出文件夹
+    overwrite_output_dir=True,       # 覆盖输出文件夹
+    num_train_epochs=1,              # 训练轮数
+    per_device_train_batch_size=1,   # 每个设备的batch大小
+    save_steps=1000000,                 # 保存检查点的步数
+    save_total_limit=2,              # 保存检查点的最大数量
+    logging_steps=10,                # 日志记录的步数
+    display_progress_bar=True        # 显示进度条
+)
+# 初始化Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_datasets['train'],
+)
+# 开始训练
+trainer.train()
