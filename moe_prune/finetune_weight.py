@@ -231,16 +231,13 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 
 def tokenize_function(examples):
-    return tokenizer(examples['text'], padding="max_length", truncation=True, max_length=128, return_tensors="pt")
-
-def add_labels(example):
-    # 复制 input_ids 作为标签
-    example['labels'] = example['input_ids'].detach().clone()
-    return example
+    x = tokenizer(examples['text'], padding="max_length", truncation=True, max_length=128, return_tensors="pt")
+    x["labels"] = x["input_ids"]
+    return x
 
 # 应用tokenize函数
 tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=["text"])
-tokenized_datasets = tokenized_datasets.map(add_labels, batched=True)
+# tokenized_datasets = tokenized_datasets.map(add_labels, batched=True)
 # 设置格式化输出
 # tokenized_datasets.set_format(
 #     type='torch', columns=['input_ids', 'attention_mask'])
