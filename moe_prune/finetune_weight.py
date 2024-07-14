@@ -195,7 +195,7 @@ for param in model.parameters():
     param.requires_grad = False
 
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
-    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx]
+    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
     prune_expert_weight_list = []
     for prune_expert_idx in prune_expert_idx_list:
         weight = dynamic_weights[(prune_layer_idx, prune_expert_idx)]
