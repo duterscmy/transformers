@@ -234,7 +234,7 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     for prune_expert_idx, weight in zip(prune_expert_idx_list, finetune_weights):
         key = "{}-{}".format(prune_layer_idx, prune_expert_idx)
         value = [weight]
-    new_dynamic_weights[key] = value
+        new_dynamic_weights[key] = value
 
 print(new_dynamic_weights)
 
