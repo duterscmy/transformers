@@ -478,8 +478,9 @@ class DeepseekMoE(nn.Module):
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
 
         # 专家的动态权重
+
         dynamic_weights = {}
-        dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
+        dynamic_weights_path = os.path.join(current_dir, "finetune_weight_score_mode_distribution_layer_9.1w.json")
         dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
         for key, value in dynamic_weight_tmp.items():
             key = key.split("-")
