@@ -420,12 +420,15 @@ class DeepseekMoE(nn.Module):
     
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
+        print(identity.dtype)
         outputs = []
         for _expert_idx, _weight in zip(_prune_expert_idxs, self.prune_experts_weights):
+            print("forward_expert_idx {}".format(_expert_idx))
             output = self.experts[_expert_idx](identity)
             outputs.append(output*_weight.to(torch.float32))
         
         if self.config.n_shared_experts is not None:
+            print("forward_shared_expert")
             outputs.append(self.shared_experts(identity))
         outputs = torch.stack(outputs, dim=0)
         outputs = torch.sum(outputs, dim=0)
@@ -433,6 +436,7 @@ class DeepseekMoE(nn.Module):
     
     def forward_route(self, hidden_states):
         identity = hidden_states
+        print(identity.dtype)
         orig_shape = hidden_states.shape
         topk_idx, topk_weight, aux_loss = self.gate(hidden_states)
         hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
