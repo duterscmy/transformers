@@ -412,8 +412,8 @@ class DeepseekMoE(nn.Module):
                 config=config, intermediate_size=intermediate_size)
 
         self.layer_num = 27
-        self.num_route_experts = 0
-        self.prune_layer_num = 3
+        self.num_route_experts = 6
+        self.prune_layer_num = 9
 
         # self.score_mode = "random"
         self.score_mode = "distribute"
@@ -470,17 +470,23 @@ class DeepseekMoE(nn.Module):
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         else:
-            layer_idx_to_expert_idxs = {}
-            for layer_idx in range(27):
-                expert_idxs = list(range(64))
-                random.shuffle(expert_idxs)
-                layer_idx_to_expert_idxs[layer_idx] = expert_idxs
+            # layer_idx_to_expert_idxs = {}
+            # for layer_idx in range(27):
+            #     expert_idxs = list(range(64))
+            #     random.shuffle(expert_idxs)
+            #     layer_idx_to_expert_idxs[layer_idx] = expert_idxs
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.random.json")
+            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+            layer_idx_to_expert_idxs = {
+                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
 
         # 专家的动态权重
 
         dynamic_weights = {}
-        dynamic_weights_path = os.path.join(current_dir, "finetune_weight_score_mode_distribution_layer_9.1w.json")
+        # dynamic_weights_path = os.path.join(current_dir, "finetune_weight_score_mode_distribution_layer_9.1w.json")
+        dynamic_weights_path = os.path.join(current_dir, "dynamic_weights.json")
         dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
         for key, value in dynamic_weight_tmp.items():
             key = key.split("-")
