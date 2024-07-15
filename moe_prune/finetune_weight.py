@@ -267,10 +267,9 @@ trainer = Trainer(
     train_dataset=tokenized_datasets['train'],
 )
 # 开始训练
-try:
-    trainer.train()
-except:
-    print("save error")
+trainer.train()
+# except:
+#     print("save error")
 import shutil
 shutil.rmtree('finetune_output/')
 
