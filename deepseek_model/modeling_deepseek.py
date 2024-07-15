@@ -421,18 +421,9 @@ class DeepseekMoE(nn.Module):
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
         outputs = []
-        for _expert_idx in _prune_expert_idxs:
+        for _expert_idx, _weight in zip(_prune_expert_idxs, self.prune_experts_weights):
             output = self.experts[_expert_idx](identity)
-            try:
-                expert_weight = dynamic_weights[(_relative_layer,_expert_idx)]
-            except:
-                print(_relative_layer, _expert_idx)
-                print(dynamic_weights.keys())
-                print(dynamic_weights[_relative_layer].keys())
-                #exit()
-                print("no expert weight，using 0.06")
-                expert_weight = 0.06
-            outputs.append(output*expert_weight)
+            outputs.append(output*_weight)
         
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))

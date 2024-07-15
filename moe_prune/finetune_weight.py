@@ -197,8 +197,10 @@ elif prune_num_expert == 6 and score_mode == "distribution":
 for param in model.parameters():
     param.requires_grad = False
 
+prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
+    prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list  # global variable
     prune_expert_weight_list = []
     for prune_expert_idx in prune_expert_idx_list:
         weight = dynamic_weights[(prune_layer_idx, prune_expert_idx)]
@@ -218,6 +220,9 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     for w in layer.mlp.prune_experts_weights:
         print(w.data)
 
+# set global variable
+prune_layer_list.append(prune_layer_idx_to_expert_idx)
+layer_num_list.append(num_layer)
 
 # finetune
 # 加载数据集
