@@ -58,7 +58,7 @@ parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.head2k.
                     help="finetune data")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
-parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
+parser.add_argument("--batch-size", type=int, default=8, help="并行解码的样本数量")
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
@@ -268,7 +268,8 @@ trainer = Trainer(
 )
 # 开始训练
 trainer.train()
-
+import shutil
+shutil.rmtree('finetune_output/')
 
 # 保存trained weights
 
