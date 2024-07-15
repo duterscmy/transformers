@@ -390,7 +390,7 @@ class DeepseekMoE(nn.Module):
     def return_expert_weights(self,):
         res = []
         for weight in self.prune_experts_weights:
-            res.append(weight.data)
+            res.append(weight.item())
         return res
 
     def forward(self, inputs):

@@ -236,6 +236,8 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
         value = [weight]
     new_dynamic_weights[key] = value
 
+print(new_dynamic_weights)
+
 output_file = "finetune_weight_score_mode_{}_layer_{}.json"
 output_dir = "deepseek_model/finetune_weights"
 if not os.path.exists(output_dir):
