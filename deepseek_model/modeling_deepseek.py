@@ -435,6 +435,8 @@ class DeepseekMoE(nn.Module):
         print("stack")
         outputs = torch.sum(outputs, dim=0)
         print("sum")
+        print("outputs dtype {}".format(outputs.dtype))
+        outputs = outputs.to(identity.dtype)
         return outputs
     
     def forward_route(self, hidden_states):
