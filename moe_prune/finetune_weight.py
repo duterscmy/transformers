@@ -250,15 +250,16 @@ tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns
 #     type='torch', columns=['input_ids', 'attention_mask'])
 
 # 设置训练参数
-training_args = TrainingArguments(
-    output_dir='./finetune_output',          # 输出文件夹
-    overwrite_output_dir=True,       # 覆盖输出文件夹
-    num_train_epochs=1,              # 训练轮数
-    per_device_train_batch_size=1,   # 每个设备的batch大小
-    save_steps=1000000,                 # 保存检查点的步数
-    save_total_limit=2,              # 保存检查点的最大数量
-    logging_steps=10,                # 日志记录的步数
-)
+training_args = TrainingArguments(  
+    output_dir='./finetune_output',          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）  
+    overwrite_output_dir=True,               # 覆盖输出文件夹  
+    num_train_epochs=1,                      # 训练轮数  
+    per_device_train_batch_size=4,           # 每个设备的batch大小  
+    save_steps=None,                         # 不保存检查点（或者设置一个非常大的值，如1000000）  
+    save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）  
+    logging_steps=10,                        # 日志记录的步数  
+    # 注意：其他参数可以根据需要进行调整  
+) 
 # 初始化Trainer
 trainer = Trainer(
     model=model,
@@ -283,7 +284,7 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
         new_dynamic_weights[key] = value
 
 
-output_file = "finetune_weight_score_mode_{}_layer_{}.json"
+output_file = "finetune_weight_score_mode_{}_layer_{}.json".format(score_mode, prune_num_layer)
 output_dir = "deepseek_model/finetune_weights"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
