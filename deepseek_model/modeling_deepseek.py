@@ -407,10 +407,10 @@ class DeepseekMoE(nn.Module):
             _relative_layer = _global_layer % _layer_num
             if _relative_layer in _prune_layer_idx_to_expert_idxs:
                 _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
-                print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
+                # print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
                 output = self.forward_prune(inputs, _prune_expert_idxs, _relative_layer)
             else:
-                print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
+                # print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
                 output = self.forward_route(inputs)
         except Exception as e:
             err_msg = traceback.format_exc()
@@ -420,28 +420,28 @@ class DeepseekMoE(nn.Module):
     
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
-        print(identity.dtype)
+        # print(identity.dtype)
         outputs = []
         for _expert_idx, _weight in zip(_prune_expert_idxs, self.prune_experts_weights):
             output = self.experts[_expert_idx](identity)
             outputs.append(output*_weight.to(torch.float32))
-            print("forward_expert_idx {}".format(_expert_idx))
+            # print("forward_expert_idx {}".format(_expert_idx))
         
         if self.config.n_shared_experts is not None:
-            print(identity.dtype)
+            # print(identity.dtype)
             outputs.append(self.shared_experts(identity))
-            print("forward_shared_expert")
+            # print("forward_shared_expert")
         outputs = torch.stack(outputs, dim=0)
-        print("stack")
+        # print("stack")
         outputs = torch.sum(outputs, dim=0)
-        print("sum")
-        print("outputs dtype {}".format(outputs.dtype))
+        # print("sum")
+        # print("outputs dtype {}".format(outputs.dtype))
         outputs = outputs.to(identity.dtype)
         return outputs
     
     def forward_route(self, hidden_states):
         identity = hidden_states
-        print(identity.dtype)
+        # print(identity.dtype)
         orig_shape = hidden_states.shape
         topk_idx, topk_weight, aux_loss = self.gate(hidden_states)
         hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
@@ -594,7 +594,7 @@ class DeepseekAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
-            print("hidden states dtype: {}".format(hidden_states.dtype))
+            # print("hidden states dtype: {}".format(hidden_states.dtype))
             query_states = self.q_proj(hidden_states)
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)
