@@ -232,7 +232,7 @@ layer_num_list.append(num_layer)
 # finetune
 # 加载数据集
 dataset = load_dataset('json', data_files=[
-                       'datasets/c4-train.00000-of-01024.head2k.json'])
+                       args.input])
 
 
 # 假设你正在使用GPT-2模型（你可以根据需要更改为其他模型）
