@@ -225,27 +225,6 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
 prune_layer_list.append(prune_layer_idx_to_expert_idx)
 layer_num_list.append(num_layer)
 
-new_dynamic_weights = {}
-for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
-    layer = model.model.layers[prune_layer_idx+1]  # 实际层索引包含一个非Moe层
-    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
-
-    finetune_weights = layer.mlp.return_expert_weights()
-    for prune_expert_idx, weight in zip(prune_expert_idx_list, finetune_weights):
-        key = "{}-{}".format(prune_layer_idx, prune_expert_idx)
-        value = [weight]
-        new_dynamic_weights[key] = value
-
-print(new_dynamic_weights)
-
-output_file = "finetune_weight_score_mode_{}_layer_{}.json"
-output_dir = "deepseek_model/finetune_weights"
-if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
-output_path = os.path.join(output_dir, output_file)
-json.dump(new_dynamic_weights, open(output_path, "w"))
-
-exit()
 
 # finetune
 # 加载数据集
@@ -301,7 +280,8 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     for prune_expert_idx, weight in zip(prune_expert_idx_list, finetune_weights):
         key = "{}-{}".format(prune_layer_idx, prune_expert_idx)
         value = [weight]
-    new_dynamic_weights[key] = value
+        new_dynamic_weights[key] = value
+
 
 output_file = "finetune_weight_score_mode_{}_layer_{}.json"
 output_dir = "deepseek_model/finetune_weights"
