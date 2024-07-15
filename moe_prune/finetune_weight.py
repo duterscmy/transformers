@@ -110,7 +110,6 @@ device_map = infer_auto_device_map(model,
                                    max_memory=available_memory,
                                    no_split_module_classes=no_split_module_classes)
 print('Inferred Device Map: \n', device_map)
-exit()
 device_map = { '': 'cuda:0' }
 
 
