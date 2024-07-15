@@ -58,7 +58,7 @@ parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.head2k.
                     help="finetune data")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
-parser.add_argument("--batch-size", type=int, default=1, help="并行解码的样本数量")
+parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
@@ -254,7 +254,7 @@ training_args = TrainingArguments(
     output_dir='./finetune_output',          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）  
     overwrite_output_dir=True,               # 覆盖输出文件夹  
     num_train_epochs=1,                      # 训练轮数  
-    per_device_train_batch_size=4,           # 每个设备的batch大小  
+    per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小  
     save_steps=10000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）  
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）  
     logging_steps=10,                        # 日志记录的步数  
