@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import shutil
+import traceback
 from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
 from transformers import AutoTokenizer
 from datasets import load_dataset
@@ -110,7 +112,7 @@ device_map = infer_auto_device_map(model,
                                    max_memory=available_memory,
                                    no_split_module_classes=no_split_module_classes)
 print('Inferred Device Map: \n', device_map)
-device_map = { '': 'cuda:0' }
+device_map = {'': 'cuda:0'}
 
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -201,7 +203,8 @@ for param in model.parameters():
 prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
-    prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list  # global variable
+    # global variable
+    prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
     prune_expert_weight_list = []
     for prune_expert_idx in prune_expert_idx_list:
         weight = dynamic_weights[(prune_layer_idx, prune_expert_idx)]
@@ -238,28 +241,32 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 
 def tokenize_function(examples):
-    x = tokenizer(examples['text'], padding="max_length", truncation=True, max_length=128, return_tensors="pt")
-    x["labels"] = x["input_ids"].clone()  # Ensure labels are the same as input_ids and convert to FP32
+    x = tokenizer(examples['text'], padding="max_length",
+                  truncation=True, max_length=128, return_tensors="pt")
+    # Ensure labels are the same as input_ids and convert to FP32
+    x["labels"] = x["input_ids"].clone()
     return x
 
+
 # 应用tokenize函数
-tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=["text"])
+tokenized_datasets = dataset.map(
+    tokenize_function, batched=True, remove_columns=["text"])
 # tokenized_datasets = tokenized_datasets.map(add_labels, batched=True)
 # 设置格式化输出
 # tokenized_datasets.set_format(
 #     type='torch', columns=['input_ids', 'attention_mask'])
 
 # 设置训练参数
-training_args = TrainingArguments(  
-    output_dir='./finetune_output',          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）  
-    overwrite_output_dir=True,               # 覆盖输出文件夹  
-    num_train_epochs=1,                      # 训练轮数  
-    per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小  
-    save_steps=10000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）  
-    save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）  
-    logging_steps=10,                        # 日志记录的步数  
-    # 注意：其他参数可以根据需要进行调整  
-) 
+training_args = TrainingArguments(
+    output_dir='./finetune_output',          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
+    overwrite_output_dir=True,               # 覆盖输出文件夹
+    num_train_epochs=1,                      # 训练轮数
+    per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
+    save_steps=10000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
+    logging_steps=10,                        # 日志记录的步数
+    # 注意：其他参数可以根据需要进行调整
+)
 # 初始化Trainer
 trainer = Trainer(
     model=model,
@@ -267,10 +274,11 @@ trainer = Trainer(
     train_dataset=tokenized_datasets['train'],
 )
 # 开始训练
-trainer.train()
-# except:
-#     print("save error")
-import shutil
+try:
+    trainer.train()
+except Exception as e:
+    print(e, traceback.format_exc())
+    print("save error")
 shutil.rmtree('finetune_output/')
 
 # 保存trained weights
@@ -287,7 +295,8 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
         new_dynamic_weights[key] = value
 
 
-output_file = "finetune_weight_score_mode_{}_layer_{}.json".format(score_mode, prune_num_layer)
+output_file = "finetune_weight_score_mode_{}_layer_{}.json".format(
+    score_mode, prune_num_layer)
 output_dir = "deepseek_model/finetune_weights"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
