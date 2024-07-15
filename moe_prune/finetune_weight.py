@@ -120,10 +120,6 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
-    # offload_folder="offload",
-    # offload_state_dict=True,
-    # dtype=eval(f'torch.{model_dtype}'),
-    # no_split_module_classes=[no_split_module_classes]
 )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
@@ -272,37 +268,38 @@ training_args = TrainingArguments(
     # 注意：其他参数可以根据需要进行调整
 )
 # 初始化Trainer
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_datasets['train'],
-)
-# 开始训练
-try:
-    trainer.train()
-except Exception as e:
-    print(e, traceback.format_exc())
-    print("save error")
-shutil.rmtree('finetune_output/')
+for epoch in range(1, 6):
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_datasets['train'],
+    )
+    # 开始训练
+    try:
+        trainer.train()
+    except Exception as e:
+        print(e, traceback.format_exc())
+        print("save error")
+    shutil.rmtree('finetune_output/')
 
-# 保存trained weights
+    # 保存trained weights
 
-new_dynamic_weights = {}
-for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
-    layer = model.model.layers[prune_layer_idx+1]  # 实际层索引包含一个非Moe层
-    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
+    new_dynamic_weights = {}
+    for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
+        layer = model.model.layers[prune_layer_idx+1]  # 实际层索引包含一个非Moe层
+        prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
 
-    finetune_weights = layer.mlp.return_expert_weights()
-    for prune_expert_idx, weight in zip(prune_expert_idx_list, finetune_weights):
-        key = "{}-{}".format(prune_layer_idx, prune_expert_idx)
-        value = [weight]
-        new_dynamic_weights[key] = value
+        finetune_weights = layer.mlp.return_expert_weights()
+        for prune_expert_idx, weight in zip(prune_expert_idx_list, finetune_weights):
+            key = "{}-{}".format(prune_layer_idx, prune_expert_idx)
+            value = [weight]
+            new_dynamic_weights[key] = value
 
 
-output_file = "finetune_weight_score_mode_{}_layer_{}.json".format(
-    score_mode, prune_num_layer)
-output_dir = "deepseek_model/finetune_weights"
-if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
-output_path = os.path.join(output_dir, output_file)
-json.dump(new_dynamic_weights, open(output_path, "w"))
+    output_file = "finetune_weight_score_mode_{}_layer_{}_epoch_{}.json".format(
+        score_mode, prune_num_layer, epoch)
+    output_dir = "deepseek_model/finetune_weights"
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    output_path = os.path.join(output_dir, output_file)
+    json.dump(new_dynamic_weights, open(output_path, "w"))
