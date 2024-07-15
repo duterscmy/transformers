@@ -110,6 +110,8 @@ device_map = infer_auto_device_map(model,
                                    max_memory=available_memory,
                                    no_split_module_classes=no_split_module_classes)
 print('Inferred Device Map: \n', device_map)
+exit()
+device_map = { '': 'cuda:0' }
 
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -213,12 +215,12 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     for weight in layer.mlp.prune_experts_weights:
         weight.requires_grad = True
 
-    print("layer {}".format(prune_layer_idx))
-    for name, param in layer.mlp.named_parameters():
-        print(name, param.requires_grad)
-    print(prune_expert_weight_list)
-    for w in layer.mlp.prune_experts_weights:
-        print(w.data)
+    # print("layer {}".format(prune_layer_idx))
+    # for name, param in layer.mlp.named_parameters():
+        # print(name, param.requires_grad)
+    # print(prune_expert_weight_list)
+    # for w in layer.mlp.prune_experts_weights:
+        # print(w.data)
 
 # set global variable
 prune_layer_list.append(prune_layer_idx_to_expert_idx)
