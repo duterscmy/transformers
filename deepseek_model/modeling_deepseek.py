@@ -423,7 +423,7 @@ class DeepseekMoE(nn.Module):
         outputs = []
         for _expert_idx, _weight in zip(_prune_expert_idxs, self.prune_experts_weights):
             output = self.experts[_expert_idx](identity)
-            outputs.append(output*_weight)
+            outputs.append(output*_weight.to(torch.float32))
         
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))
