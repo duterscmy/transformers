@@ -152,11 +152,15 @@ elif score_mode == "distribution":
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
-    layer_idx_to_expert_idxs = {}
-    for layer_idx in range(num_layer):
-        expert_idxs = list(range(num_expert))
-        random.shuffle(expert_idxs)
-        layer_idx_to_expert_idxs[layer_idx] = expert_idxs
+    # layer_idx_to_expert_idxs = {}
+    # for layer_idx in range(num_layer):
+    #     expert_idxs = list(range(num_expert))
+    #     random.shuffle(expert_idxs)
+    #     layer_idx_to_expert_idxs[layer_idx] = expert_idxs
+    layer_idx_to_expert_idxs = json.load(
+        open("deepseek_model/layer_idx_to_expert_idx.random.json", 'r'))
+    layer_idx_to_expert_idxs = {
+        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 
 # load dynamic weights
