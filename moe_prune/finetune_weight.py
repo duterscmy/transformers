@@ -148,11 +148,6 @@ elif score_mode == "distribution":
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
-    # layer_idx_to_expert_idxs = {}
-    # for layer_idx in range(num_layer):
-    #     expert_idxs = list(range(num_expert))
-    #     random.shuffle(expert_idxs)
-    #     layer_idx_to_expert_idxs[layer_idx] = expert_idxs
     layer_idx_to_expert_idxs = json.load(
         open("deepseek_model/layer_idx_to_expert_idx.random.json", 'r'))
     layer_idx_to_expert_idxs = {
@@ -169,39 +164,13 @@ for key, value in dynamic_weight_tmp.items():
     dynamic_weights[(layer_idx, expert_idx)] = w
 print(dynamic_weights)
 
-# ppl order pruning single layer
-if prune_num_expert == 0:
-    # layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
-    #                             15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
-    # layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
-    layer_idx_list_ppl_order = [10, 17, 22, 1, 12,
-                                21, 6, 15, 7, 19, 24, 9]
-elif prune_num_expert == 6 and score_mode == "random":
-    # layer_idx_list_ppl_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
-    #                             24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
-    # layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
-    layer_idx_list_ppl_order = [10, 17, 22, 1, 9,
-                                6, 21, 15, 12, 14, 19, 7]
-elif prune_num_expert == 6 and score_mode == "l1":
-    layer_idx_list_ppl_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
-                                2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
-    layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
-    layer_idx_list_ppl_order = [4, 17, 21, 10, 22,
-                                12, 7, 15, 9, 19, 6, 18]
-elif prune_num_expert == 6 and score_mode == "distribution":
-    layer_idx_list_ppl_order = [15, 10, 7, 18, 8, 2, 22, 16, 23, 11,
-                                20, 24, 13, 6, 19, 25, 4, 3, 5, 1, 27, 9, 21, 17, 12, 26, 14]
-    layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
-    layer_idx_list_ppl_order = [14, 9, 1, 21, 22,
-                                6, 17, 10, 12, 7, 15, 24]
-
 
 # add expert weight to prune layer
 for param in model.parameters():
     param.requires_grad = False
 
 prune_layer_idx_to_expert_idx = {}
-for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
+for prune_layer_idx in [prune_num_layer]:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
     # global variable
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
@@ -285,7 +254,7 @@ for epoch in range(1, 6):
     # 保存trained weights
 
     new_dynamic_weights = {}
-    for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
+    for prune_layer_idx in [prune_num_layer]:
         layer = model.model.layers[prune_layer_idx+1]  # 实际层索引包含一个非Moe层
         prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
 
@@ -298,7 +267,7 @@ for epoch in range(1, 6):
 
     output_file = "finetune_weight_score_mode_{}_layer_{}_epoch_{}.json".format(
         score_mode, prune_num_layer, epoch)
-    output_dir = "deepseek_model/finetune_weights"
+    output_dir = "deepseek_model/finetune_weights_per_layer"
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     output_path = os.path.join(output_dir, output_file)
