@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from peft import LoraConfig, get_peft_model
 import shutil
 import traceback
 from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
@@ -148,11 +149,6 @@ elif score_mode == "distribution":
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
-    # layer_idx_to_expert_idxs = {}
-    # for layer_idx in range(num_layer):
-    #     expert_idxs = list(range(num_expert))
-    #     random.shuffle(expert_idxs)
-    #     layer_idx_to_expert_idxs[layer_idx] = expert_idxs
     layer_idx_to_expert_idxs = json.load(
         open("deepseek_model/layer_idx_to_expert_idx.random.json", 'r'))
     layer_idx_to_expert_idxs = {
@@ -200,35 +196,62 @@ elif prune_num_expert == 6 and score_mode == "distribution":
 for param in model.parameters():
     param.requires_grad = False
 
+
 prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
-    # global variable
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
-    prune_expert_weight_list = []
-    for prune_expert_idx in prune_expert_idx_list:
-        weight = dynamic_weights[(prune_layer_idx, prune_expert_idx)]
-        prune_expert_weight_list.append(weight)
-
-    layer = model.model.layers[prune_layer_idx+1]  # 实际层索引包含一个非Moe层
-    layer.mlp.set_expert_weights(prune_expert_weight_list)
-
-    # print
-    for weight in layer.mlp.prune_experts_weights:
-        weight.requires_grad = True
-
-    # print("layer {}".format(prune_layer_idx))
-    # for name, param in layer.mlp.named_parameters():
-        # print(name, param.requires_grad)
-    # print(prune_expert_weight_list)
-    # for w in layer.mlp.prune_experts_weights:
-        # print(w.data)
-
 # set global variable
 prune_layer_list.append(prune_layer_idx_to_expert_idx)
 layer_num_list.append(num_layer)
 
 
+# add lora to model
+def check_if_lora(module_name):
+    try:
+        layer_id = int(module_name.split(".")[2])
+        expert_id = int(module_name.split(".")[5])
+    except:
+        return False
+    moe_layer_id = layer_id - 1
+    # print(moe_layer_id, expert_id)
+    if moe_layer_id in prune_layer_idx_to_expert_idx and expert_id in prune_layer_idx_to_expert_idx[moe_layer_id]:
+        return True
+    return False
+
+
+linear_module_list = []
+for name, module in model.named_modules():
+    if isinstance(module, (torch.nn.Linear)):
+        linear_module_list.append(name)
+finetune_module_list = list(filter(check_if_lora, linear_module_list))
+
+
+def print_trainable_parameters(model):
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    print(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.2f}"
+    )
+
+
+print_trainable_parameters(model)
+config = LoraConfig(
+    r=8,
+    lora_alpha=16,
+    target_modules=finetune_module_list,
+    lora_dropout=0.01,
+    bias="none"
+    # task_type="SEQ_2_SEQ_LM",
+)
+lora_model = get_peft_model(model, config)
+print_trainable_parameters(lora_model)
+
+exit()
 # finetune
 # 加载数据集
 dataset = load_dataset('json', data_files=[
@@ -294,7 +317,6 @@ for epoch in range(1, 6):
             key = "{}-{}".format(prune_layer_idx, prune_expert_idx)
             value = [weight]
             new_dynamic_weights[key] = value
-
 
     output_file = "finetune_weight_score_mode_{}_layer_{}_epoch_{}.json".format(
         score_mode, prune_num_layer, epoch)
