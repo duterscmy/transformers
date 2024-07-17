@@ -55,13 +55,17 @@ parser.add_argument("--input", default="datasets/sample_questions_from_6_dataset
                     help="MTBench数据集路径") # ./moe_prune/data/questions.jsonl
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
-parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
-parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
+parser.add_argument("--dynamic-weight", default="deepseek_model/dynamic_weight.json",
+                    help="预计算的专家权重")
+
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
+
+parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
 parser.add_argument("--layer-mode", default="one_layer",
                     help="如果指定，则只剪枝一层，否则累加前面所有层")
+parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
 parser.add_argument("--no-prune", action="store_true")
@@ -170,12 +174,15 @@ elif score_mode == "distribution":
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 elif score_mode == "random":
-    layer_idx_to_expert_idxs = {}
-    for layer_idx in range(num_layer):
-        expert_idxs = list(range(num_expert))
-        random.shuffle(expert_idxs)
-        layer_idx_to_expert_idxs[layer_idx] = expert_idxs
-
+    # layer_idx_to_expert_idxs = {}
+    # for layer_idx in range(num_layer):
+    #     expert_idxs = list(range(num_expert))
+    #     random.shuffle(expert_idxs)
+    #     layer_idx_to_expert_idxs[layer_idx] = expert_idxs
+    layer_idx_to_expert_idxs = json.load(
+        open("deepseek_model/layer_idx_to_expert_idx.random.json", 'r'))
+    layer_idx_to_expert_idxs = {
+        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 # decode and eval ppl
 # no prune
@@ -191,7 +198,7 @@ if args.no_prune:
     exit()
 
 # load dynamic weights
-dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
+dynamic_weight_tmp = json.load(open(args.dynamic_weight))
 for key, value in dynamic_weight_tmp.items():
     key = key.split("-")
     layer_idx = int(key[0])
@@ -206,8 +213,8 @@ layer_idx_list_ppl_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
 
 # prune
 
-for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
-# for prune_layer_num in [3, 6, 9, 12, 15, 18, 21]:
+# for prune_layer_num in range(1, 28):  # 对多少层/哪些层进行剪枝
+for prune_layer_num in [12]:
     print("prune layer num {}".format(prune_layer_num))
     for prune_expert_num in [6]: # 保留的专家数量
         print("prune expert num {}".format(prune_expert_num))
