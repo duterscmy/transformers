@@ -463,18 +463,18 @@ class DeepseekMoE(nn.Module):
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-        elif self.score_mode == "distribution":
+        elif self.score_mode == "distribute":
             expert_order_path = os.path.join(
                 current_dir, "layer_idx_to_expert_idx.distribution.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         else:
-            layer_idx_to_expert_idxs = {}
-            for layer_idx in range(27):
-                expert_idxs = list(range(64))
-                random.shuffle(expert_idxs)
-                layer_idx_to_expert_idxs[layer_idx] = expert_idxs
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.random.json")
+            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+            layer_idx_to_expert_idxs = {
+                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
 
         # 专家的动态权重
