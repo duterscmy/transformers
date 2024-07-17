@@ -288,7 +288,7 @@ if not os.path.exists(output_dir):
 
 output_path = os.path.join(output_dir, output_file)
 training_args = TrainingArguments(
-    output_dir=output_dir,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
+    output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
