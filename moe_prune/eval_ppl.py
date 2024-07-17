@@ -129,21 +129,23 @@ if "qw27" in pytorch_checkpoint_path:
 
 
 # read benchmark
-# with open(args.input, 'r') as fp:
-#     questions = []
-#     for line in fp:
-#         line = line.strip()
-#         if line:
-#             question = json.loads(line)
-#             questions.append(question)
-# raw_questions = list(map(lambda x: x["turns"][0], questions))
-with open(args.input, 'r') as fp:
-    questions = []
-    for line in fp:
-        line = line.strip()
-        if line:
-            questions.append(line)
-raw_questions = questions
+if "questions.jsonl" in args.input:
+    with open(args.input, 'r') as fp:
+        questions = []
+        for line in fp:
+            line = line.strip()
+            if line:
+                question = json.loads(line)
+                questions.append(question)
+    raw_questions = list(map(lambda x: x["turns"][0], questions))
+else:
+    with open(args.input, 'r') as fp:
+        questions = []
+        for line in fp:
+            line = line.strip()
+            if line:
+                questions.append(line)
+    raw_questions = questions
 
 
 batch_size = args.batch_size
