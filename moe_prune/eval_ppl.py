@@ -51,8 +51,10 @@ def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input", default="datasets/sample_questions_from_6_dataset.txt",
-                    help="MTBench数据集路径") # ./moe_prune/data/questions.jsonl
+parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
+                    help="MTBench数据集路径") 
+# ./moe_prune/data/questions.jsonl
+# datasets/sample_questions_from_6_dataset.txt
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
 parser.add_argument("--dynamic-weight", default="deepseek_model/dynamic_weight.json",
