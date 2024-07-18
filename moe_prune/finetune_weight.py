@@ -296,13 +296,13 @@ training_args = TrainingArguments(
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=5,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
-    save_steps=500,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    save_steps=200,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
     learning_rate=5e-5,
     lr_scheduler_type="cosine",
-    warmup_steps=500,
+    warmup_steps=100,
     eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     eval_strategy="steps",
     # 注意：其他参数可以根据需要进行调整
