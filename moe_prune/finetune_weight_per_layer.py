@@ -217,8 +217,8 @@ def print_trainable_parameters(model):
 
 print_trainable_parameters(model)
 config = LoraConfig(
-    r=32,
-    lora_alpha=8,
+    r=8,
+    lora_alpha=256,
     target_modules=finetune_module_list,
     lora_dropout=0.01,
     bias="none"
@@ -268,9 +268,9 @@ training_args = TrainingArguments(
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
-    learning_rate=1e-4,
+    learning_rate=5e-5,
     lr_scheduler_type="cosine",
-    warmup_steps=200
+    warmup_ratio=0.1
     # 注意：其他参数可以根据需要进行调整
 )
 # 初始化Trainer
