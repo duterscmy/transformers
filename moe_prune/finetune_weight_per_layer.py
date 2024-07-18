@@ -163,7 +163,7 @@ for key, value in dynamic_weight_tmp.items():
     expert_idx = int(key[1])
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
-print(dynamic_weights)
+# print(dynamic_weights)
 
 
 # add expert weight to prune layer
@@ -177,6 +177,7 @@ for prune_layer_idx in [args.prune_num_layer]:
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
 # set global variable
 prune_layer_list.append(prune_layer_idx_to_expert_idx)
+print("prune layer and expert: {}".format(prune_layer_list))
 layer_num_list.append(num_layer)
 
 
@@ -199,7 +200,8 @@ for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)):
         linear_module_list.append(name)
 finetune_module_list = list(filter(check_if_lora, linear_module_list))
-print("finetune_module_list: {}".format(finetune_module_list))
+# print("finetune_module_list: {}".format(finetune_module_list))
+
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -211,6 +213,7 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.2f}"
     )
+
 
 print_trainable_parameters(model)
 config = LoraConfig(
@@ -251,7 +254,7 @@ tokenized_datasets = dataset.map(
 # 设置训练参数
 
 output_file = "finetune_lora_score_mode_{}_layer_{}.json".format(
-        score_mode, prune_num_layer)
+    score_mode, prune_num_layer)
 output_dir = "deepseek_model/finetune_lora_per_layer"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -264,7 +267,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
     save_steps=500,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
-    # eval_steps=100,                         
+    # eval_steps=100,
     # evaluation_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
@@ -292,5 +295,4 @@ raw_questions = list(map(lambda x: x["turns"][0], questions))
 lora_model.eval()
 mean_ppl = compute_ppl(lora_model, tokenizer, raw_questions, None)
 
-print(mean_ppl)
-
+print("mean_ppl on mtbench".format(mean_ppl))
