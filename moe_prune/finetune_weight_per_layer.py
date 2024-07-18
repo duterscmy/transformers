@@ -295,4 +295,4 @@ raw_questions = list(map(lambda x: x["turns"][0], questions))
 lora_model.eval()
 mean_ppl = compute_ppl(lora_model, tokenizer, raw_questions, None)
 
-print("mean_ppl on mtbench".format(mean_ppl))
+print("mean_ppl on mtbench: {}".format(mean_ppl))
