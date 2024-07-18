@@ -172,7 +172,7 @@ for param in model.parameters():
 
 
 prune_layer_idx_to_expert_idx = {}
-for prune_layer_idx in [11]:
+for prune_layer_idx in [args.prune_num_layer]:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
 # set global variable
