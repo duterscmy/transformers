@@ -270,8 +270,7 @@ training_args = TrainingArguments(
     # evaluation_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
-    optimizer_name="AdamW",  
-    optimizer_kwargs={"lr": 1e-5},  # 设置学习率为1e-5
+    learning_rate=1e-5,
     # 注意：其他参数可以根据需要进行调整
 )
 # 初始化Trainer
