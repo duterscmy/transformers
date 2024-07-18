@@ -255,6 +255,7 @@ print_trainable_parameters(lora_model)
 # 加载数据集
 dataset = load_dataset('json', data_files=[
                        args.input])
+eval_dataset = load_dataset('json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
 
 # 假设你正在使用GPT-2模型（你可以根据需要更改为其他模型）
@@ -273,6 +274,9 @@ def tokenize_function(examples):
 # 应用tokenize函数
 tokenized_datasets = dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
+
+eval_tokenized_datasets = eval_dataset.map(
+    tokenize_function, batched=True, remove_columns=["text"])
 # tokenized_datasets = tokenized_datasets.map(add_labels, batched=True)
 # 设置格式化输出
 # tokenized_datasets.set_format(
@@ -290,7 +294,7 @@ output_path = os.path.join(output_dir, output_file)
 training_args = TrainingArguments(
     output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
-    num_train_epochs=1,                      # 训练轮数
+    num_train_epochs=5,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
     save_steps=500,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
@@ -298,7 +302,9 @@ training_args = TrainingArguments(
     logging_steps=5,                        # 日志记录的步数
     learning_rate=5e-5,
     lr_scheduler_type="cosine",
-    warmup_ratio=0.1
+    warmup_ratio=0.1,
+    eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    eval_strategy="steps",
     # 注意：其他参数可以根据需要进行调整
 )
 # 初始化Trainer
@@ -306,6 +312,7 @@ trainer = Trainer(
     model=lora_model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
+    eval_dataset=eval_tokenized_datasets["train"],
 )
 trainer.train()
 
