@@ -302,7 +302,7 @@ training_args = TrainingArguments(
     logging_steps=5,                        # 日志记录的步数
     learning_rate=5e-5,
     lr_scheduler_type="cosine",
-    warmup_ratio=0.1,
+    warmup_steps=500,
     eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     eval_strategy="steps",
     # 注意：其他参数可以根据需要进行调整
