@@ -217,12 +217,11 @@ def print_trainable_parameters(model):
 
 print_trainable_parameters(model)
 config = LoraConfig(
-    r=8,
-    lora_alpha=16,
+    r=32,
+    lora_alpha=8,
     target_modules=finetune_module_list,
     lora_dropout=0.01,
     bias="none"
-    # task_type="SEQ_2_SEQ_LM",
 )
 lora_model = get_peft_model(model, config)
 print_trainable_parameters(lora_model)
