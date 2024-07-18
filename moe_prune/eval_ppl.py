@@ -154,45 +154,49 @@ prune_expert_idx_list = []  # greedy search expert list
 output_dict = {"expert_idxs": [],
                "ppl": [],
                "expert_num": []}
+try:
+    while (len(prune_expert_idx_list) < 6):
+        print("the {}th iteration".format(len(prune_expert_idx_list)))
+        candidate_expert_idx_list = [expert for expert in range(64)
+                                    if expert not in prune_expert_idx_list]
+        # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
+        print("exist prune experts {}; candidate prune experts {}".format(
+            prune_expert_idx_list, candidate_expert_idx_list))
 
-while (len(prune_expert_idx_list) < 6):
-    print("the {}th iteration".format(len(prune_expert_idx_list)))
-    candidate_expert_idx_list = [expert for expert in range(64)
-                                if expert not in prune_expert_idx_list]
-    # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
-    print("exist prune experts {}; candidate prune experts {}".format(
-        prune_expert_idx_list, candidate_expert_idx_list))
+        optimal_ppl = 1000000
+        optimal_candidate_idx = -1
+        for candidate_idx in candidate_expert_idx_list:
+            start_time = time.time()
+            tmp_prune_expert_idx_list = prune_expert_idx_list + \
+                [candidate_idx]  # 确定layer
+            print("try to eval expert idx list {}".format(tmp_prune_expert_idx_list))
 
-    optimal_ppl = 1000000
-    optimal_candidate_idx = -1
-    for candidate_idx in candidate_expert_idx_list:
-        start_time = time.time()
-        tmp_prune_expert_idx_list = prune_expert_idx_list + \
-            [candidate_idx]  # 确定layer
-        print("try to eval expert idx list {}".format(tmp_prune_expert_idx_list))
+            prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
+            print("prune layer idx to expert idxs {}".format(
+                prune_layer_idx_to_expert_idxs))
+            # update prune variables
+            prune_layer_list.append(prune_layer_idx_to_expert_idxs)
+            layer_num_list.append(num_layer)
 
-        prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
-        print("prune layer idx to expert idxs {}".format(
-            prune_layer_idx_to_expert_idxs))
-        # update prune variables
-        prune_layer_list.append(prune_layer_idx_to_expert_idxs)
-        layer_num_list.append(num_layer)
+            # eval ppl on benchmark
+            mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+            output_dict["ppl"].append(mean_ppl)
+            output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
+            output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
 
-        # eval ppl on benchmark
-        mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-        output_dict["ppl"].append(mean_ppl)
-        output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
-        output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
+            if mean_ppl < optimal_ppl:
+                optimal_ppl = mean_ppl
+                optimal_candidate_idx = candidate_idx
 
-        if mean_ppl < optimal_ppl:
-            optimal_ppl = mean_ppl
-            optimal_candidate_idx = candidate_idx
+            end_time = time.time()
+            print("ppl {}, best_ppl {}, eval ppl cost {} seconds".format(mean_ppl, optimal_ppl, end_time-start_time))
 
-        end_time = time.time()
-        print("ppl {}, best_ppl {}, eval ppl cost {} seconds".format(mean_ppl, optimal_ppl, end_time-start_time))
+        prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
-    prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
-
-print(output_dict)
-output_df = pd.DataFrame(output_dict)
-output_df.to_excel("greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
+    print(output_dict)
+    output_df = pd.DataFrame(output_dict)
+    output_df.to_excel("greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
+except Exception as e:
+    import traceback
+    msg = traceback.format_exc()
+    print("error: {}, {}".format(e, msg))
