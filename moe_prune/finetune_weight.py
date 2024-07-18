@@ -264,7 +264,7 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 def tokenize_function(examples):
     x = tokenizer(examples['text'], padding="max_length",
-                  truncation=True, max_length=128, return_tensors="pt")
+                  truncation=True, max_length=256, return_tensors="pt")
     # Ensure labels are the same as input_ids and convert to FP32
     x["labels"] = x["input_ids"].clone()
     return x
