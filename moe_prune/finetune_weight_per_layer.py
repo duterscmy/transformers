@@ -240,7 +240,7 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 def tokenize_function(examples):
     x = tokenizer(examples['text'], padding="max_length",
-                  truncation=True, max_length=128, return_tensors="pt")
+                  truncation=True, max_length=512, return_tensors="pt")
     # Ensure labels are the same as input_ids and convert to FP32
     x["labels"] = x["input_ids"].clone()
     return x
@@ -266,13 +266,11 @@ training_args = TrainingArguments(
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
     save_steps=500,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
-    # eval_steps=100,
-    # evaluation_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
-    learning_rate=5e-5,
+    learning_rate=1e-4,
     lr_scheduler_type="cosine",
-    warmup_steps=100
+    warmup_steps=200
     # 注意：其他参数可以根据需要进行调整
 )
 # 初始化Trainer
