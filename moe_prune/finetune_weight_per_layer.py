@@ -218,7 +218,7 @@ def print_trainable_parameters(model):
 print_trainable_parameters(model)
 config = LoraConfig(
     r=8,
-    lora_alpha=256,
+    lora_alpha=16,
     target_modules=finetune_module_list,
     lora_dropout=0.01,
     bias="none"
