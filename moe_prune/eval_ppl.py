@@ -91,8 +91,8 @@ def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
-                    help="MTBench数据集路径")
+parser.add_argument("--input", default="./datasets/sample_eval.json",
+                    help="eval数据集路径")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
@@ -156,11 +156,16 @@ model = AutoModelForCausalLM.from_pretrained(
     # no_split_module_classes=[no_split_module_classes]
 )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
-if "qw27" in pytorch_checkpoint_path:
-    for layer in model.model.layers:
-        layer.mlp.split()
 
 # read benchmark
+# with open(args.input, 'r') as fp:
+#     questions = []
+#     for line in fp:
+#         line = line.strip()
+#         if line:
+#             question = json.loads(line)
+#             questions.append(question)
+# raw_questions = list(map(lambda x: x["turns"][0], questions))
 with open(args.input, 'r') as fp:
     questions = []
     for line in fp:
@@ -168,7 +173,7 @@ with open(args.input, 'r') as fp:
         if line:
             question = json.loads(line)
             questions.append(question)
-raw_questions = list(map(lambda x: x["turns"][0], questions))
+raw_questions = list(map(lambda x: x["text"], questions))
 
 
 batch_size = args.batch_size
@@ -187,26 +192,15 @@ for key, value in dynamic_weight_tmp.items():
 print(dynamic_weights)
 
 
-# test
+# origin output
 prune_layer_list.append({})
 layer_num_list.append(num_layer)
 import time
 s = time.time()
 origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
 e = time.time()
-print("compute layer output cost {}".format(e-s))
+print("compute origin layer output cost {}".format(e-s))
 
-s = time.time()
-prune_layer_list.append({0:[1,2,3,4,5,6]})
-prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
-e = time.time()
-print("compute layer output cost {}".format(e-s))
-
-s = time.time()
-js_div = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
-print("compute layer output cost {}".format(time.time()-s))
-print(js_div)
-exit()
 # prune
 prune_layer_idx = int(args.prune_layer)  # 每次只剪枝一层，逐层看效果
 prune_expert_idx_list = []  # greedy search expert list
@@ -222,7 +216,7 @@ try:
         print("exist prune experts {}; candidate prune experts {}".format(
             prune_expert_idx_list, candidate_expert_idx_list))
 
-        optimal_ppl = 1000000
+        optimal_jl = 1000000
         optimal_candidate_idx = -1
         for candidate_idx in candidate_expert_idx_list:
             start_time = time.time()
@@ -239,25 +233,32 @@ try:
             layer_num_list.append(num_layer)
 
             # eval ppl on benchmark
-            mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
-            output_dict["ppl"].append(mean_ppl)
+            s = time.time()
+            prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+            e = time.time()
+            print("compute layer output cost {}".format(e-s))
+            s = time.time()
+            mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
+            print("compute layer output cost {}".format(time.time()-s))
+
+            output_dict["mean_jl"].append(mean_jl)
             output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
             output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
 
-            if mean_ppl < optimal_ppl:
-                optimal_ppl = mean_ppl
+            if mean_jl < optimal_ppl:
+                optimal_ppl = mean_jl
                 optimal_candidate_idx = candidate_idx
 
             end_time = time.time()
-            print("ppl {}, best_ppl {}, eval ppl cost {} seconds".format(
-                mean_ppl, optimal_ppl, end_time-start_time))
+            print("jl {}, best_jl {}, eval jl cost {} seconds".format(
+                mean_jl, optimal_ppl, end_time-start_time))
 
         prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
     print(output_dict)
     output_df = pd.DataFrame(output_dict)
     output_df.to_excel(
-        "greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
+        "greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
