@@ -49,6 +49,45 @@ def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
     mean_ppl = torch.exp(torch.tensor(mean_loss))
     return mean_ppl
 
+import torch
+
+def get_layer_output(model, tokenizer, input_strs, gen_kwargs,
+                     add_special_tokens=True, split_special_tokens=False, output_only=True, verbose=False):
+
+    model = model.eval()
+
+    # Tokenization
+    def encode_text_batch(input_strs):
+        inputs = tokenizer.batch_encode_plus(input_strs,
+                                             padding='longest',
+                                             add_special_tokens=add_special_tokens,
+                                             return_tensors="pt")
+        input_ids = inputs.input_ids.to(model.device)
+        attention_mask = inputs.attention_mask.to(model.device)
+        return input_ids, attention_mask
+
+    batch_size = 1  # Batch size
+    num_texts = len(input_strs)
+
+    layer_outputs = []
+
+    for i in range(0, len(input_strs), batch_size):
+        text_list_batch = input_strs[i:i+batch_size]
+        input_ids, attention_mask = encode_text_batch(text_list_batch)
+        with torch.no_grad():
+            outputs = model(input_ids, attention_mask=attention_mask, output_hidden_states=True)
+            hidden_states = outputs.hidden_states
+            # Access the output of the 7th layer (index 6)
+            layer_output = hidden_states[6]
+            print(layer_output)
+            layer_outputs.append(layer_output)
+
+    return layer_outputs
+
+# Example usage:
+# layer_outputs = get_layer_output(model, tokenizer, ["This is a test sentence."], gen_kwargs={})
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
@@ -147,6 +186,11 @@ for key, value in dynamic_weight_tmp.items():
 print(dynamic_weights)
 
 
+# test
+prune_layer_list.append({})
+layer_num_list.append(num_layer)
+get_layer_output(model, tokenizer, raw_questions, None)
+exit()
 
 # prune
 prune_layer_idx = int(args.prune_layer) # 每次只剪枝一层，逐层看效果
