@@ -42,6 +42,7 @@ def calculate_js_divergence(p, q):
     m = 0.5 * (p + q)
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
+    print(type(kl_pm), type(kl_qm))
     js_div = 0.5 * (kl_pm + kl_qm)
     return js_div
 
@@ -190,10 +191,16 @@ print(dynamic_weights)
 # test
 prune_layer_list.append({})
 layer_num_list.append(num_layer)
+import time
+s = time.time()
 origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+e = time.time()
+print("compute layer output cost {}".format(e-s))
 prune_layer_list.append({0:[1,2,3,4,5,6]})
 prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+s = time.time()
 js_div = calculate_js_divergence(origin_get_layer_output, prune_get_layer_output)
+print("compute layer output cost {}".format(time.time()-s))
 print(js_div)
 exit()
 # prune
