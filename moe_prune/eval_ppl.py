@@ -38,7 +38,7 @@ def calculate_kl_divergence(p, q):
     epsilon = 1e-10
     p = p + epsilon
     q = q + epsilon
-    return (p * (p.log() - q.log())).sum(dim=-1)
+    return (p * (p.log() - q.log())).mean()
 
 def calculate_js_divergence(logits_p, logits_q):
     """
