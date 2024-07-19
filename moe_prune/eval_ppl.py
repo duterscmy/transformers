@@ -28,6 +28,18 @@ def calculate_kl_divergence(probs_p, probs_q):
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
+def calculate_kl_divergence(p, q):
+    """
+    计算两个分布之间的KL散度
+    :param p: 真实分布的概率 (形状：[N, D])
+    :param q: 近似分布的概率 (形状：[N, D])
+    :return: KL散度
+    """
+    epsilon = 1e-10
+    p = p + epsilon
+    q = q + epsilon
+    return (p * (p.log() - q.log())).sum(dim=-1)
+
 def calculate_js_divergence(logits_p, logits_q):
     """
     计算两个分布之间的Jensen-Shannon散度
@@ -205,7 +217,7 @@ print("compute origin layer output cost {}".format(e-s))
 prune_layer_idx = int(args.prune_layer)  # 每次只剪枝一层，逐层看效果
 prune_expert_idx_list = []  # greedy search expert list
 output_dict = {"expert_idxs": [],
-               "ppl": [],
+               "mean_jl": [],
                "expert_num": []}
 try:
     while (len(prune_expert_idx_list) < 6):
