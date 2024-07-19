@@ -18,33 +18,31 @@ import torch
 import torch.nn.functional as F
 
 
-def calculate_kl_divergence(logits_p, logits_q):
+def calculate_kl_divergence(probs_p, probs_q):
     """
     计算两个分布之间的KL散度
+    :param probs_p: 真实分布的概率分布 (形状：[N, D])
+    :param probs_q: 近似分布的概率分布 (形状：[N, D])
+    :return: KL散度
+    """
+    kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
+    return kl_div
+
+def calculate_js_divergence(logits_p, logits_q):
+    """
+    计算两个分布之间的Jensen-Shannon散度
     :param logits_p: 真实分布的logits (形状：[N, D])
     :param logits_q: 近似分布的logits (形状：[N, D])
-    :return: KL散度
+    :return: JS散度
     """
     p = F.softmax(logits_p, dim=-1)  # 将logits转化为概率分布
     q = F.softmax(logits_q, dim=-1)  # 将logits转化为概率分布
 
-    kl_div = F.kl_div(q.log(), p, reduction='batchmean')  # 计算KL散度
-    return kl_div
-
-
-def calculate_js_divergence(p, q):
-    """
-    计算两个分布之间的Jensen-Shannon散度
-    :param p: 真实分布的概率分布 (形状：[N, D])
-    :param q: 近似分布的概率分布 (形状：[N, D])
-    :return: JS散度
-    """
-    print(type(p), type(q))
-    m = 0.5 * (p+q)
+    m = 0.5 * (p + q)
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
-    print(type(kl_pm), type(kl_qm))
     js_div = 0.5 * (kl_pm + kl_qm)
+    print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
     return js_div
 
 
@@ -197,8 +195,13 @@ s = time.time()
 origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
 e = time.time()
 print("compute layer output cost {}".format(e-s))
+
+s = time.time()
 prune_layer_list.append({0:[1,2,3,4,5,6]})
 prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+e = time.time()
+print("compute layer output cost {}".format(e-s))
+
 s = time.time()
 js_div = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
 print("compute layer output cost {}".format(time.time()-s))
