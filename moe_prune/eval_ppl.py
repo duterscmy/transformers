@@ -14,49 +14,44 @@ import time
 
 from transformers.models.qwen2_moe.expert_idx import *
 
-
-def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
-                add_special_tokens=True, split_special_tokens=False, output_only=True, verbose=False):
-
-    model = model.eval()
-
-    # Tokenization
-    def encode_text_batch(input_strs):
-        inputs = tokenizer.batch_encode_plus(input_strs,
-                                             padding='longest',
-                                             #  add_special_tokens=add_special_tokens,
-                                             #  split_special_tokens=split_special_tokens,
-                                             return_tensors="pt")
-        input_ids = inputs.input_ids.to(model.device)
-        attention_mask = inputs.attention_mask.to(model.device)
-        return input_ids
-
-    batch_size = 1  # 批处理大小
-    num_texts = len(input_strs)
-    loss_sum = 0.0
-
-    for i in range(0, len(input_strs), batch_size):
-        text_list_batch = input_strs[i:i+batch_size]
-        input_ids = encode_text_batch(text_list_batch)
-        with torch.no_grad():
-            outputs = model(input_ids, labels=input_ids)
-            loss = outputs.loss.mean()
-            # print("mean loss {}".format(loss))
-        loss_sum += loss.item()
-        # print("loss sum {}".format(loss_sum))
-
-    mean_loss = loss_sum / num_texts  # 计算整个数据集的损失均值
-    mean_ppl = torch.exp(torch.tensor(mean_loss))
-    return mean_ppl
-
 import torch
+import torch.nn.functional as F
 
-def get_layer_output(model, tokenizer, input_strs, gen_kwargs,
-                     add_special_tokens=True, split_special_tokens=False, output_only=True, verbose=False):
+
+def calculate_kl_divergence(logits_p, logits_q):
+    """
+    计算两个分布之间的KL散度
+    :param logits_p: 真实分布的logits (形状：[N, D])
+    :param logits_q: 近似分布的logits (形状：[N, D])
+    :return: KL散度
+    """
+    p = F.softmax(logits_p, dim=-1)  # 将logits转化为概率分布
+    q = F.softmax(logits_q, dim=-1)  # 将logits转化为概率分布
+
+    kl_div = F.kl_div(q.log(), p, reduction='batchmean')  # 计算KL散度
+    return kl_div
+
+
+def calculate_js_divergence(p, q):
+    """
+    计算两个分布之间的Jensen-Shannon散度
+    :param p: 真实分布的概率分布 (形状：[N, D])
+    :param q: 近似分布的概率分布 (形状：[N, D])
+    :return: JS散度
+    """
+    m = 0.5 * (p + q)
+    kl_pm = calculate_kl_divergence(p, m)
+    kl_qm = calculate_kl_divergence(q, m)
+    js_div = 0.5 * (kl_pm + kl_qm)
+    return js_div
+
+
+def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, add_special_tokens=True, ):
 
     model = model.eval()
-
+    layer_idx = moe_layer_idx + 2  # add embedding layer and ffn layer
     # Tokenization
+
     def encode_text_batch(input_strs):
         inputs = tokenizer.batch_encode_plus(input_strs,
                                              padding='longest',
@@ -75,18 +70,24 @@ def get_layer_output(model, tokenizer, input_strs, gen_kwargs,
         text_list_batch = input_strs[i:i+batch_size]
         input_ids, attention_mask = encode_text_batch(text_list_batch)
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, output_hidden_states=True)
+            outputs = model(
+                input_ids, attention_mask=attention_mask, output_hidden_states=True)
             hidden_states = outputs.hidden_states
-            # Access the output of the 7th layer (index 6)
-            layer_output = hidden_states[6]
-            print(layer_output)
+            layer_output = hidden_states[layer_idx]
             layer_outputs.append(layer_output)
 
     return layer_outputs
 
-# Example usage:
-# layer_outputs = get_layer_output(model, tokenizer, ["This is a test sentence."], gen_kwargs={})
 
+def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
+    js_div_sum = 0.0
+    for o, p in zip(origin_layer_outputs, prune_layer_outputs):
+        js_div = calculate_js_divergence(o, p)
+        js_div_sum += js_div.item()
+    mean_js_div = js_div_sum / len(origin_layer_outputs)
+    print("sum div {} length dataset {} mean div {}".format(
+        js_div_sum, len(origin_layer_outputs), mean_js_div))
+    return mean_js_div
 
 
 parser = argparse.ArgumentParser()
@@ -189,11 +190,14 @@ print(dynamic_weights)
 # test
 prune_layer_list.append({})
 layer_num_list.append(num_layer)
-get_layer_output(model, tokenizer, raw_questions, None)
+origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+prune_layer_list.append({0:[1,2,3,4,5,6]})
+prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+js_div = calculate_js_divergence(origin_get_layer_output, prune_get_layer_output)
+print(js_div)
 exit()
-
 # prune
-prune_layer_idx = int(args.prune_layer) # 每次只剪枝一层，逐层看效果
+prune_layer_idx = int(args.prune_layer)  # 每次只剪枝一层，逐层看效果
 prune_expert_idx_list = []  # greedy search expert list
 output_dict = {"expert_idxs": [],
                "ppl": [],
@@ -202,7 +206,7 @@ try:
     while (len(prune_expert_idx_list) < 6):
         print("the {}th iteration".format(len(prune_expert_idx_list)))
         candidate_expert_idx_list = [expert for expert in range(64)
-                                    if expert not in prune_expert_idx_list]
+                                     if expert not in prune_expert_idx_list]
         # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
         print("exist prune experts {}; candidate prune experts {}".format(
             prune_expert_idx_list, candidate_expert_idx_list))
@@ -213,7 +217,8 @@ try:
             start_time = time.time()
             tmp_prune_expert_idx_list = prune_expert_idx_list + \
                 [candidate_idx]  # 确定layer
-            print("try to eval expert idx list {}".format(tmp_prune_expert_idx_list))
+            print("try to eval expert idx list {}".format(
+                tmp_prune_expert_idx_list))
 
             prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
             print("prune layer idx to expert idxs {}".format(
@@ -233,13 +238,15 @@ try:
                 optimal_candidate_idx = candidate_idx
 
             end_time = time.time()
-            print("ppl {}, best_ppl {}, eval ppl cost {} seconds".format(mean_ppl, optimal_ppl, end_time-start_time))
+            print("ppl {}, best_ppl {}, eval ppl cost {} seconds".format(
+                mean_ppl, optimal_ppl, end_time-start_time))
 
         prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
     print(output_dict)
     output_df = pd.DataFrame(output_dict)
-    output_df.to_excel("greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
+    output_df.to_excel(
+        "greedy_search_expert_layer{}.xlsx".format(prune_layer_idx))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
