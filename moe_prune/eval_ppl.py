@@ -39,7 +39,7 @@ def calculate_js_divergence(p, q):
     :param q: 近似分布的概率分布 (形状：[N, D])
     :return: JS散度
     """
-    m = 0.5 * (p + q)
+    m = [(0.5 * (p[i] + q[i])) for i in range(len(p))]
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
     print(type(kl_pm), type(kl_qm))
