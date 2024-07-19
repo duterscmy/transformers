@@ -39,7 +39,8 @@ def calculate_js_divergence(p, q):
     :param q: 近似分布的概率分布 (形状：[N, D])
     :return: JS散度
     """
-    m = [(0.5 * (p[i] + q[i])) for i in range(len(p))]
+    print(type(p), type(q))
+    m = 0.5 * (p+q)
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
     print(type(kl_pm), type(kl_qm))
@@ -199,7 +200,7 @@ print("compute layer output cost {}".format(e-s))
 prune_layer_list.append({0:[1,2,3,4,5,6]})
 prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
 s = time.time()
-js_div = calculate_js_divergence(origin_get_layer_output, prune_get_layer_output)
+js_div = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
 print("compute layer output cost {}".format(time.time()-s))
 print(js_div)
 exit()
