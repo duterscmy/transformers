@@ -62,8 +62,8 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
         )
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
-        print("input_ids {}".format(input_ids))
-        print("attention mask {}".format(attention_mask))
+        # print("input_ids {}".format(input_ids))
+        # print("attention mask {}".format(attention_mask))
         return input_ids, attention_mask
 
     num_texts = len(input_strs)
@@ -78,15 +78,15 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             hidden_states = outputs.hidden_states
             layer_output = hidden_states[layer_idx]
             layer_output = layer_output.to(torch.float32)
-            print("layer output {}".format(layer_output))
-            print("layer output size {}".format(layer_output.size()))
+            # print("layer output {}".format(layer_output))
+            # print("layer output size {}".format(layer_output.size()))
             # Remove padding based on attention mask
             for j in range(len(text_list_batch)):
                 # print(layer_output[j].size())
                 length = attention_mask[j].sum().item()  # the valid length of the input
-                trimmed_output = layer_output[j, :length, :]
-                print("trimmed output {}".format(trimmed_output))
-                print("trimeed output dtype {}".format(trimmed_output.dtype))
+                trimmed_output = layer_output[j, -length:, :]  # 左侧padding
+                # print("trimmed output {}".format(trimmed_output))
+                # print("trimeed output dtype {}".format(trimmed_output.dtype))
                 layer_outputs.append(trimmed_output)
     return layer_outputs
 
@@ -96,7 +96,7 @@ def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
         js_div = calculate_js_divergence(o, p)
         js_div_sum += js_div.item()
     mean_js_div = js_div_sum / len(origin_layer_outputs)
-    print("sum div {} length dataset {} mean div {}".format(
+    print("sum div {}, length dataset {}, mean div {}".format(
         js_div_sum, len(origin_layer_outputs), mean_js_div))
     return mean_js_div
 
@@ -200,7 +200,7 @@ for key, value in dynamic_weight_tmp.items():
     expert_idx = int(key[1])
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
-print(dynamic_weights)
+# print(dynamic_weights)
 
 
 # origin output (no prune)
@@ -247,7 +247,6 @@ try:
             # eval ppl on benchmark
             prune_get_layer_output = get_layer_output(model, prune_layer_idx, tokenizer, raw_questions, batch_size=batch_size)
             mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
-            exit()
             output_dict["mean_jl"].append(mean_jl)
             output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
             output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
