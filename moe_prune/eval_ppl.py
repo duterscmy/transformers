@@ -215,7 +215,7 @@ output_dict = {"expert_idxs": [],
                "mean_jl": [],
                "expert_num": []}
 try:
-    while (len(prune_expert_idx_list) < 6):
+    while (len(prune_expert_idx_list) < 6):  # extra expert num = 6
         print("the {}th iteration".format(len(prune_expert_idx_list)))
         candidate_expert_idx_list = [expert for expert in range(64)
                                      if expert not in prune_expert_idx_list]
@@ -225,7 +225,7 @@ try:
 
         optimal_jl = 1000000
         optimal_candidate_idx = -1
-        for candidate_idx in candidate_expert_idx_list:
+        for candidate_idx in candidate_expert_idx_list:  # greedy search expert
             start_time = time.time()
             tmp_prune_expert_idx_list = prune_expert_idx_list + \
                 [candidate_idx]  # 确定layer
@@ -257,10 +257,14 @@ try:
 
         prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
+        output_dict["mean_jl"].append(optimal_jl)
+        output_dict["expert_idxs"].append(prune_expert_idx_list)
+        output_dict["expert_num"].append(len(prune_expert_idx_list))
+
     print(output_dict)
     output_df = pd.DataFrame(output_dict)
     output_df.to_excel(
-        "greedy_search_expert_output/greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
+        "greedy_search_expert_output_by_jl/greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
