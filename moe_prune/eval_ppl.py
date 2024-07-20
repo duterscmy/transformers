@@ -28,6 +28,7 @@ def calculate_kl_divergence(probs_p, probs_q):
     epsilon = 1e-10
     probs_p = probs_p + epsilon
     probs_q = probs_q + epsilon
+    print("probs p dtype {}, probs q dtype {}".format(probs_p, probs_q))
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
@@ -81,9 +82,8 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
                 # print(layer_output[j].size())
                 length = attention_mask[j].sum().item()  # the valid length of the input
                 trimmed_output = layer_output[j, :length, :]
-                # print(trimmed_output.size())
+                print("trimeed output dtype".format(trimmed_output.dtype))
                 layer_outputs.append(trimmed_output)
-
     return layer_outputs
 
 def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
@@ -199,7 +199,7 @@ for key, value in dynamic_weight_tmp.items():
 print(dynamic_weights)
 
 
-# origin output
+# origin output (no prune)
 prune_layer_idx = int(args.prune_layer)  # 每次只剪枝一层，逐层看效果
 prune_layer_list.append({})
 layer_num_list.append(num_layer)
