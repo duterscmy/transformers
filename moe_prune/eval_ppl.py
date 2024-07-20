@@ -45,7 +45,7 @@ def calculate_js_divergence(logits_p, logits_q):
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
     js_div = 0.5 * (kl_pm + kl_qm)
-    # print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
+    print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
     return js_div
 
 def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, add_special_tokens=True):
@@ -240,13 +240,8 @@ try:
             layer_num_list.append(num_layer)
 
             # eval ppl on benchmark
-            s = time.time()
             prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=batch_size)
-            e = time.time()
-            print("compute layer output cost {}".format(e-s))
-            s = time.time()
             mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
-            print("compute layer output cost {}".format(time.time()-s))
 
             output_dict["mean_jl"].append(mean_jl)
             output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
@@ -257,7 +252,7 @@ try:
                 optimal_candidate_idx = candidate_idx
 
             end_time = time.time()
-            print("jl {}, best_jl {}, eval jl cost {} seconds".format(
+            print("jl {}, best_jl {}, eval jl cost {} seconds\n".format(
                 mean_jl, optimal_jl, end_time-start_time))
 
         prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
