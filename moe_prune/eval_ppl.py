@@ -200,16 +200,17 @@ print(dynamic_weights)
 
 
 # origin output
+prune_layer_idx = int(args.prune_layer)  # 每次只剪枝一层，逐层看效果
 prune_layer_list.append({})
 layer_num_list.append(num_layer)
 import time
 s = time.time()
-origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=batch_size)
+origin_get_layer_output = get_layer_output(model, prune_layer_idx, tokenizer, raw_questions, batch_size=batch_size)
 e = time.time()
 print("compute origin layer output cost {}".format(e-s))
 
 # prune
-prune_layer_idx = int(args.prune_layer)  # 每次只剪枝一层，逐层看效果
+
 prune_expert_idx_list = []  # greedy search expert list
 output_dict = {"expert_idxs": [],
                "mean_jl": [],
@@ -240,7 +241,7 @@ try:
             layer_num_list.append(num_layer)
 
             # eval ppl on benchmark
-            prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=batch_size)
+            prune_get_layer_output = get_layer_output(model, prune_layer_idx, tokenizer, raw_questions, batch_size=batch_size)
             mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
 
             output_dict["mean_jl"].append(mean_jl)
