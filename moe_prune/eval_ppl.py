@@ -57,7 +57,7 @@ def calculate_js_divergence(logits_p, logits_q):
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
     js_div = 0.5 * (kl_pm + kl_qm)
-    print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
+    # print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
     return js_div
 
 
@@ -94,6 +94,43 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, add_special_to
 
     return layer_outputs
 
+def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, add_special_tokens=True):
+    model = model.eval()
+    layer_idx = moe_layer_idx + 2  # add embedding layer and ffn layer
+
+    def encode_text_batch(input_strs):
+        inputs = tokenizer.batch_encode_plus(
+            input_strs,
+            padding='longest',
+            add_special_tokens=add_special_tokens,
+            return_tensors="pt"
+        )
+        input_ids = inputs.input_ids.to(model.device)
+        attention_mask = inputs.attention_mask.to(model.device)
+        return input_ids, attention_mask
+
+    num_texts = len(input_strs)
+    layer_outputs = []
+
+    for i in range(0, num_texts, batch_size):
+        text_list_batch = input_strs[i:i + batch_size]
+        input_ids, attention_mask = encode_text_batch(text_list_batch)
+        with torch.no_grad():
+            outputs = model(
+                input_ids, attention_mask=attention_mask, output_hidden_states=True)
+            hidden_states = outputs.hidden_states
+            layer_output = hidden_states[layer_idx]
+            layer_output = layer_output.to(torch.float32)
+
+            # Remove padding based on attention mask
+            for j in range(len(text_list_batch)):
+                print(layer_output[j].size())
+                length = attention_mask[j].sum().item()  # the valid length of the input
+                trimmed_output = layer_output[j, :length, :]
+                print(trimmed_output.size())
+                layer_outputs.append(trimmed_output)
+
+    return layer_outputs
 
 def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
     js_div_sum = 0.0
@@ -213,7 +250,7 @@ prune_layer_list.append({})
 layer_num_list.append(num_layer)
 import time
 s = time.time()
-origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=4)
 e = time.time()
 print("compute origin layer output cost {}".format(e-s))
 
@@ -250,7 +287,7 @@ try:
 
             # eval ppl on benchmark
             s = time.time()
-            prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions)
+            prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=4)
             e = time.time()
             print("compute layer output cost {}".format(e-s))
             s = time.time()
