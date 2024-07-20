@@ -171,7 +171,7 @@ try:
                 [candidate_idx]  # 确定layer
             print("try to eval expert idx list {}".format(tmp_prune_expert_idx_list))
 
-            prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
+            prune_layer_idx_to_expert_idxs = {prune_layer_idx: tmp_prune_expert_idx_list}
             print("prune layer idx to expert idxs {}".format(
                 prune_layer_idx_to_expert_idxs))
             # update prune variables
