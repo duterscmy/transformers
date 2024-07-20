@@ -28,7 +28,7 @@ def calculate_kl_divergence(probs_p, probs_q):
     epsilon = 1e-10
     probs_p = probs_p + epsilon
     probs_q = probs_q + epsilon
-    print("probs p {}, probs q {}".format(probs_p, probs_q))
+    # print("probs p {}, probs q {}".format(probs_p, probs_q))
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
@@ -41,7 +41,7 @@ def calculate_js_divergence(logits_p, logits_q):
     """
     p = F.softmax(logits_p, dim=-1)  # 将logits转化为概率分布
     q = F.softmax(logits_q, dim=-1)  # 将logits转化为概率分布
-    print("p {}, q {}".format(p, q))
+    # print("p {}, q {}".format(p, q))
     m = 0.5 * (p + q)
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
