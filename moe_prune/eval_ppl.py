@@ -62,6 +62,8 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
         )
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
+        print("input_ids {}".format(input_ids))
+        print("attention mask {}".format(attention_mask))
         return input_ids, attention_mask
 
     num_texts = len(input_strs)
