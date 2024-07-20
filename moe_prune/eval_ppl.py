@@ -28,7 +28,7 @@ def calculate_kl_divergence(probs_p, probs_q):
     epsilon = 1e-10
     probs_p = probs_p + epsilon
     probs_q = probs_q + epsilon
-    print("probs p dtype {}, probs q dtype {}".format(probs_p.dtype, probs_q.dtype))
+    print("probs p {}, probs q {}".format(probs_p, probs_q))
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
@@ -41,7 +41,7 @@ def calculate_js_divergence(logits_p, logits_q):
     """
     p = F.softmax(logits_p, dim=-1)  # 将logits转化为概率分布
     q = F.softmax(logits_q, dim=-1)  # 将logits转化为概率分布
-
+    print("p {}, q {}".format(p, q))
     m = 0.5 * (p + q)
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
@@ -76,12 +76,14 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             hidden_states = outputs.hidden_states
             layer_output = hidden_states[layer_idx]
             layer_output = layer_output.to(torch.float32)
-
+            print("layer output {}".format(layer_output))
+            print("layer output size {}".format(layer_output.size()))
             # Remove padding based on attention mask
             for j in range(len(text_list_batch)):
                 # print(layer_output[j].size())
                 length = attention_mask[j].sum().item()  # the valid length of the input
                 trimmed_output = layer_output[j, :length, :]
+                print("trimmed output {}".format(trimmed_output))
                 print("trimeed output dtype {}".format(trimmed_output.dtype))
                 layer_outputs.append(trimmed_output)
     return layer_outputs
