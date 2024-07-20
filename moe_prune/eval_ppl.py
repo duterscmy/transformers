@@ -28,7 +28,7 @@ def calculate_kl_divergence(probs_p, probs_q):
     epsilon = 1e-10
     probs_p = probs_p + epsilon
     probs_q = probs_q + epsilon
-    print("probs p dtype {}, probs q dtype {}".format(probs_p, probs_q))
+    print("probs p dtype {}, probs q dtype {}".format(probs_p.dtype, probs_q.dtype))
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
@@ -82,7 +82,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
                 # print(layer_output[j].size())
                 length = attention_mask[j].sum().item()  # the valid length of the input
                 trimmed_output = layer_output[j, :length, :]
-                print("trimeed output dtype".format(trimmed_output.dtype))
+                print("trimeed output dtype {}".format(trimmed_output.dtype))
                 layer_outputs.append(trimmed_output)
     return layer_outputs
 
