@@ -245,7 +245,7 @@ try:
             # eval ppl on benchmark
             prune_get_layer_output = get_layer_output(model, prune_layer_idx, tokenizer, raw_questions, batch_size=batch_size)
             mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
-
+            exit()
             output_dict["mean_jl"].append(mean_jl)
             output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
             output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
