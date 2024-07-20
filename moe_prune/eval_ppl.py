@@ -232,7 +232,7 @@ try:
             print("try to eval expert idx list {}".format(
                 tmp_prune_expert_idx_list))
 
-            prune_layer_idx_to_expert_idxs = {0: tmp_prune_expert_idx_list}
+            prune_layer_idx_to_expert_idxs = {prune_layer_idx: tmp_prune_expert_idx_list}
             print("prune layer idx to expert idxs {}".format(
                 prune_layer_idx_to_expert_idxs))
             # update prune variables
@@ -260,7 +260,7 @@ try:
     print(output_dict)
     output_df = pd.DataFrame(output_dict)
     output_df.to_excel(
-        "greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
+        "greedy_search_expert_output/greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
