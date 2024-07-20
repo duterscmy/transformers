@@ -31,18 +31,6 @@ def calculate_kl_divergence(probs_p, probs_q):
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
-# def calculate_kl_divergence(p, q):
-#     """
-#     计算两个分布之间的KL散度
-#     :param p: 真实分布的概率 (形状：[N, D])
-#     :param q: 近似分布的概率 (形状：[N, D])
-#     :return: KL散度
-#     """
-#     epsilon = 1e-10
-#     p = p + epsilon
-#     q = q + epsilon
-#     return (p * (p.log() - q.log())).mean()
-
 def calculate_js_divergence(logits_p, logits_q):
     """
     计算两个分布之间的Jensen-Shannon散度
@@ -59,40 +47,6 @@ def calculate_js_divergence(logits_p, logits_q):
     js_div = 0.5 * (kl_pm + kl_qm)
     # print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
     return js_div
-
-
-def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, add_special_tokens=True, ):
-
-    model = model.eval()
-    layer_idx = moe_layer_idx + 2  # add embedding layer and ffn layer
-    # Tokenization
-
-    def encode_text_batch(input_strs):
-        inputs = tokenizer.batch_encode_plus(input_strs,
-                                             padding='longest',
-                                             add_special_tokens=add_special_tokens,
-                                             return_tensors="pt")
-        input_ids = inputs.input_ids.to(model.device)
-        attention_mask = inputs.attention_mask.to(model.device)
-        return input_ids, attention_mask
-
-    batch_size = 1  # Batch size
-    num_texts = len(input_strs)
-
-    layer_outputs = []
-
-    for i in range(0, len(input_strs), batch_size):
-        text_list_batch = input_strs[i:i+batch_size]
-        input_ids, attention_mask = encode_text_batch(text_list_batch)
-        with torch.no_grad():
-            outputs = model(
-                input_ids, attention_mask=attention_mask, output_hidden_states=True)
-            hidden_states = outputs.hidden_states
-            layer_output = hidden_states[layer_idx]
-            layer_output = layer_output.to(torch.float32)
-            layer_outputs.append(layer_output)
-
-    return layer_outputs
 
 def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, add_special_tokens=True):
     model = model.eval()
@@ -124,10 +78,10 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
 
             # Remove padding based on attention mask
             for j in range(len(text_list_batch)):
-                print(layer_output[j].size())
+                # print(layer_output[j].size())
                 length = attention_mask[j].sum().item()  # the valid length of the input
                 trimmed_output = layer_output[j, :length, :]
-                print(trimmed_output.size())
+                # print(trimmed_output.size())
                 layer_outputs.append(trimmed_output)
 
     return layer_outputs
@@ -250,7 +204,7 @@ prune_layer_list.append({})
 layer_num_list.append(num_layer)
 import time
 s = time.time()
-origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=4)
+origin_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=batch_size)
 e = time.time()
 print("compute origin layer output cost {}".format(e-s))
 
@@ -287,7 +241,7 @@ try:
 
             # eval ppl on benchmark
             s = time.time()
-            prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=4)
+            prune_get_layer_output = get_layer_output(model, 0, tokenizer, raw_questions, batch_size=batch_size)
             e = time.time()
             print("compute layer output cost {}".format(e-s))
             s = time.time()
