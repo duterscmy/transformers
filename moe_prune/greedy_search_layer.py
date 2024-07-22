@@ -101,7 +101,7 @@ def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
         js_div_sum += js_div.item()
     mean_js_div = js_div_sum / len(origin_layer_outputs)
     print("sum div {}, length dataset {}, mean div {}".format(
-        js_div_sum, len(origin_layer_outputs), mean_js_div))
+        js_div_sum, len(origin_layer_outputs), mean_js_div), flush=True)
     return mean_js_div
 
 
@@ -230,12 +230,12 @@ output_dict = {"layer_idxs": [],
                "layer_num": []}
 try:
     while (len(prune_layer_idx_list) < 15):
-        print("the {}th iteration".format(len(prune_layer_idx_list)))
+        print("the {}th iteration".format(len(prune_layer_idx_list)), flush=True)
         candidate_layer_idx_list = [layer for layer in range(27)
                                     if layer not in prune_layer_idx_list]
         # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
         print("exist prune layers {}; candidate prune layers {}".format(
-            prune_layer_idx_list, candidate_layer_idx_list))
+            prune_layer_idx_list, candidate_layer_idx_list), flush=True)
 
         optimal_jl = 1000000
         optimal_candidate_idx = -1
@@ -243,13 +243,13 @@ try:
             start_time = time.time()
             tmp_layer_list = prune_layer_idx_list + [candidate_idx]
             print("try to eval layer idx list {}".format(
-                tmp_layer_list))
+                tmp_layer_list), flush=True)
 
             prune_layer_idx_to_expert_idxs = {}
             for layer_idx in tmp_layer_list:
                 prune_layer_idx_to_expert_idxs[layer_idx] = layer_idx_to_expert_idxs[layer_idx]
             print("exp prune layer idx to expert idxs {}".format(
-                prune_layer_idx_to_expert_idxs))
+                prune_layer_idx_to_expert_idxs), flush=True)
             # update prune variables
             prune_layer_list.append(prune_layer_idx_to_expert_idxs)
             layer_num_list.append(num_layer)
@@ -269,7 +269,7 @@ try:
 
             end_time = time.time()
             print("jl {}, best_jl {}, eval jl cost {} seconds\n".format(
-                mean_jl, optimal_jl, end_time-start_time))
+                mean_jl, optimal_jl, end_time-start_time), flush=True)
 
         prune_layer_idx_list = prune_layer_idx_list + [optimal_candidate_idx]
 
@@ -283,4 +283,4 @@ try:
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
-    print("error: {}, {}".format(e, msg))
+    print("error: {}, {}".format(e, msg), flush=True)
