@@ -412,8 +412,8 @@ class DeepseekMoE(nn.Module):
                 config=config, intermediate_size=intermediate_size)
 
         self.layer_num = 27
-        self.num_route_experts = 0
-        self.prune_layer_num = 3
+        self.num_route_experts = 6
+        self.prune_layer_num = 9
 
         # self.score_mode = "random"
         self.score_mode = "distribute"
@@ -450,6 +450,8 @@ class DeepseekMoE(nn.Module):
                 layer-1 for layer in self.prune_layer_order]
             self.prune_layer_order = [14, 9, 1, 21, 22,
                                       6, 17, 10, 12, 7, 15, 24]  # greedy search
+        elif self.score_mode == "greedy_jl":
+            self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
 
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
@@ -469,7 +471,13 @@ class DeepseekMoE(nn.Module):
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-        else:
+        elif self.score_mode == "random":
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.random.json")
+            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+            layer_idx_to_expert_idxs = {
+                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+        elif self.score_mode == "layer_idx_to_expert_idx.greedy_jl.json":
             expert_order_path = os.path.join(
                 current_dir, "layer_idx_to_expert_idx.random.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
