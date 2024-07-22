@@ -22,7 +22,7 @@ from transformers.models.qwen2_moe.expert_idx import *
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.head1w.json",
+parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
