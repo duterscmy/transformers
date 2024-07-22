@@ -225,9 +225,9 @@ print("compute origin layer output cost {}".format(e-s))
 # prune
 
 prune_layer_idx_list = []  # greedy search expert list
-output_dict = {"expert_idxs": [],
+output_dict = {"layer_idxs": [],
                "mean_jl": [],
-               "expert_num": []}
+               "layer_num": []}
 try:
     while (len(prune_layer_idx_list) < 15):
         print("the {}th iteration".format(len(prune_layer_idx_list)))
