@@ -21,41 +21,6 @@ import time
 from transformers.models.qwen2_moe.expert_idx import *
 
 
-def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
-                add_special_tokens=True, split_special_tokens=False, output_only=True, verbose=False):
-
-    model = model.eval()
-
-    # Tokenization
-    def encode_text_batch(input_strs):
-        inputs = tokenizer.batch_encode_plus(input_strs,
-                                             padding='longest',
-                                             #  add_special_tokens=add_special_tokens,
-                                             #  split_special_tokens=split_special_tokens,
-                                             return_tensors="pt")
-        input_ids = inputs.input_ids.to(model.device)
-        attention_mask = inputs.attention_mask.to(model.device)
-        return input_ids
-
-    batch_size = 1  # 批处理大小
-    num_texts = len(input_strs)
-    loss_sum = 0.0
-
-    for i in range(0, len(input_strs), batch_size):
-        text_list_batch = input_strs[i:i+batch_size]
-        input_ids = encode_text_batch(text_list_batch)
-        with torch.no_grad():
-            outputs = model(input_ids, labels=input_ids)
-            loss = outputs.loss.mean()
-            # print("mean loss {}".format(loss))
-        loss_sum += loss.item()
-        # print("loss sum {}".format(loss_sum))
-
-    mean_loss = loss_sum / num_texts  # 计算整个数据集的损失均值
-    mean_ppl = torch.exp(torch.tensor(mean_loss))
-    return mean_ppl
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.head1w.json",
                     help="finetune data")
@@ -153,6 +118,11 @@ elif score_mode == "random":
         open("deepseek_model/layer_idx_to_expert_idx.random.json", 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+elif score_mode == "greedy_jl":
+    layer_idx_to_expert_idxs = json.load(
+        open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
+    layer_idx_to_expert_idxs = {
+        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 
 # load dynamic weights
@@ -190,6 +160,8 @@ elif prune_num_expert == 6 and score_mode == "distribution":
     layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [14, 9, 1, 21, 22,
                                 6, 17, 10, 12, 7, 15, 24]
+elif prune_num_expert == 6 and score_mode == "greedy_jl":
+    layer_idx_list_ppl_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
 
 
 # add expert weight to prune layer
@@ -294,7 +266,7 @@ output_path = os.path.join(output_dir, output_file)
 training_args = TrainingArguments(
     output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
-    num_train_epochs=5,                      # 训练轮数
+    num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
     save_steps=200,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
