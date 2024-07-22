@@ -47,7 +47,7 @@ def calculate_js_divergence(logits_p, logits_q):
     kl_pm = calculate_kl_divergence(p, m)
     kl_qm = calculate_kl_divergence(q, m)
     js_div = 0.5 * (kl_pm + kl_qm)
-    print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
+    # print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
     return js_div
 
 
