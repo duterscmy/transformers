@@ -241,7 +241,7 @@ try:
         optimal_candidate_idx = -1
         for candidate_idx in candidate_layer_idx_list:  # greedy search expert
             start_time = time.time()
-            tmp_layer_list = [] = prune_layer_idx_list + [candidate_idx]
+            tmp_layer_list = prune_layer_idx_list + [candidate_idx]
             print("try to eval layer idx list {}".format(
                 tmp_layer_list))
 
