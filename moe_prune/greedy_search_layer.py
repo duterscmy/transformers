@@ -224,7 +224,8 @@ print("compute origin layer output cost {}".format(e-s))
 
 # prune
 
-prune_layer_idx_list = []  # greedy search expert list
+prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
+no_prune_list = [0, 8, 11, 13, 16, 20, 25 ,26]
 output_dict = {"layer_idxs": [],
                "mean_jl": [],
                "layer_num": []}
@@ -232,7 +233,7 @@ try:
     while (len(prune_layer_idx_list) < 15):
         print("the {}th iteration".format(len(prune_layer_idx_list)), flush=True)
         candidate_layer_idx_list = [layer for layer in range(27)
-                                    if layer not in prune_layer_idx_list]
+                                    if layer not in prune_layer_idx_list and layer not in no_prune_list]
         # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
         print("exist prune layers {}; candidate prune layers {}".format(
             prune_layer_idx_list, candidate_layer_idx_list), flush=True)
