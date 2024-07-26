@@ -224,63 +224,68 @@ print("compute origin layer output cost {}".format(e-s))
 
 # prune
 
-prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
-no_prune_list = [0, 8, 11, 13, 16, 20, 25 ,26]
+beam_size = 3
+max_greedy_layer_num = 15
+beam_prune_layer_idx_list = []
+for _ in range(beam_size):
+    beam_prune_layer_idx_list.append([])
+# prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
+# no_prune_list = [0, 8, 11, 13, 16, 20, 25 ,26]
 output_dict = {"layer_idxs": [],
                "mean_jl": [],
                "layer_num": []}
 try:
-    while (len(prune_layer_idx_list) < 15):
+    while (len(prune_layer_idx_list) < max_greedy_layer_num):
         print("the {}th iteration".format(len(prune_layer_idx_list)), flush=True)
-        candidate_layer_idx_list = [layer for layer in range(27)
-                                    if layer not in prune_layer_idx_list and layer not in no_prune_list]
-        # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
-        print("exist prune layers {}; candidate prune layers {}".format(
-            prune_layer_idx_list, candidate_layer_idx_list), flush=True)
+        new_prune_layer_idx_list_with_jl = []
 
-        optimal_jl = 1000000
-        optimal_candidate_idx = -1
-        for candidate_idx in candidate_layer_idx_list:  # greedy search expert
-            start_time = time.time()
-            tmp_layer_list = prune_layer_idx_list + [candidate_idx]
-            print("try to eval layer idx list {}".format(
-                tmp_layer_list), flush=True)
+        for prune_layer_idx_list in beam_prune_layer_idx_list:
+            candidate_layer_idx_list = [layer for layer in range(27)
+                                        if layer not in prune_layer_idx_list]
+            # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
+            print("exist prune layers {}; candidate prune layers {}".format(
+                prune_layer_idx_list, candidate_layer_idx_list), flush=True)
 
-            prune_layer_idx_to_expert_idxs = {}
-            for layer_idx in tmp_layer_list:
-                prune_layer_idx_to_expert_idxs[layer_idx] = layer_idx_to_expert_idxs[layer_idx]
-            print("exp prune layer idx to expert idxs {}".format(
-                prune_layer_idx_to_expert_idxs), flush=True)
-            # update prune variables
-            prune_layer_list.append(prune_layer_idx_to_expert_idxs)
-            layer_num_list.append(num_layer)
+            
+            for candidate_idx in candidate_layer_idx_list:  # greedy search expert
+                start_time = time.time()
+                tmp_layer_list = prune_layer_idx_list + [candidate_idx]
+                print("try to eval layer idx list {}".format(
+                    tmp_layer_list), flush=True)
 
-            # eval ppl on benchmark
-            prune_get_layer_output = get_layer_output(
-                model, 26, tokenizer, raw_questions, batch_size=batch_size)
-            mean_jl = get_total_js_divergence(
-                origin_get_layer_output, prune_get_layer_output)
-            output_dict["mean_jl"].append(mean_jl)
-            output_dict["layer_idxs"].append(tmp_layer_list)
-            output_dict["layer_num"].append(len(tmp_layer_list))
+                prune_layer_idx_to_expert_idxs = {}
+                for layer_idx in tmp_layer_list:
+                    prune_layer_idx_to_expert_idxs[layer_idx] = layer_idx_to_expert_idxs[layer_idx]
+                print("exp prune layer idx to expert idxs {}".format(
+                    prune_layer_idx_to_expert_idxs), flush=True)
+                # update prune variables
+                prune_layer_list.append(prune_layer_idx_to_expert_idxs)
+                layer_num_list.append(num_layer)
 
-            if mean_jl < optimal_jl:
-                optimal_jl = mean_jl
-                optimal_candidate_idx = candidate_idx
+                # eval ppl on benchmark
+                prune_get_layer_output = get_layer_output(
+                    model, 26, tokenizer, raw_questions, batch_size=batch_size)
+                mean_jl = get_total_js_divergence(
+                    origin_get_layer_output, prune_get_layer_output)
+                output_dict["mean_jl"].append(mean_jl)
+                output_dict["layer_idxs"].append(tmp_layer_list)
+                output_dict["layer_num"].append(len(tmp_layer_list))
 
-            end_time = time.time()
-            print("jl {}, best_jl {}, eval jl cost {} seconds\n".format(
-                mean_jl, optimal_jl, end_time-start_time), flush=True)
+                new_prune_layer_idx_list_with_jl.append(tuple(tmp_layer_list), mean_jl)
 
-        prune_layer_idx_list = prune_layer_idx_list + [optimal_candidate_idx]
+        
+        new_prune_layer_idx_list_with_jl = sorted(new_prune_layer_idx_list_with_jl, key=lambda x: x[1])
+        new_prune_layer_idx_list_with_jl = new_prune_layer_idx_list_with_jl[:beam_size]
+        for prune_layer_idx_tuple, jl in new_prune_layer_idx_list_with_jl:
+            output_dict["mean_jl"].append(jl)
+            output_dict["layer_idxs"].append(prune_layer_idx_tuple)
+            output_dict["layer_num"].append(len(prune_layer_idx_tuple))
+        beam_prune_layer_idx_list = [list(t) for t,j in new_prune_layer_idx_list_with_jl]
 
-        output_dict["mean_jl"].append(optimal_jl)
-        output_dict["layer_idxs"].append(prune_layer_idx_list)
-        output_dict["layer_num"].append(len(prune_layer_idx_list))
 
     output_df = pd.DataFrame(output_dict)
     output_df.to_excel(
-        "greedy_search_layer_jl.xlsx".format())
+        "greedy_search_layer_jl_beam{}.xlsx".format(beam_size))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
