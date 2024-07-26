@@ -271,7 +271,7 @@ try:
                 output_dict["layer_idxs"].append(tmp_layer_list)
                 output_dict["layer_num"].append(len(tmp_layer_list))
 
-                new_prune_layer_idx_list_with_jl.append(tuple(tmp_layer_list), mean_jl)
+                new_prune_layer_idx_list_with_jl.append((tuple(tmp_layer_list), mean_jl))
 
         
         new_prune_layer_idx_list_with_jl = sorted(new_prune_layer_idx_list_with_jl, key=lambda x: x[1])
