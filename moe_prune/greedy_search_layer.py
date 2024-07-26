@@ -235,7 +235,7 @@ output_dict = {"layer_idxs": [],
                "mean_jl": [],
                "layer_num": []}
 try:
-    while (len(prune_layer_idx_list) < max_greedy_layer_num):
+    while (len(beam_prune_layer_idx_list[0]) < max_greedy_layer_num):
         print("the {}th iteration".format(len(prune_layer_idx_list)), flush=True)
         new_prune_layer_idx_list_with_jl = []
 
