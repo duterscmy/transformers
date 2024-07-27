@@ -116,7 +116,11 @@ parser.add_argument("--num-layer", type=int, default=27,
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
 
 parser.add_argument("--prune-layer", default=0, type=int,
-                    help="选定一层进行剪枝")
+                    help="剪枝层的数量")
+parser.add_argument("--prune-expert", default=6, type=int,
+                    help="剪枝专家的数量")
+parser.add_argument("--prune-expert-strategy", default="greedy_jl", type=str,
+                    help="剪枝专家的策略")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
 
@@ -194,13 +198,17 @@ raw_questions = list(map(lambda x: x["text"], questions))
 batch_size = args.batch_size
 num_layer = args.num_layer
 num_expert = args.num_expert
-# prune_num_expert = args.prune_num_expert
+num_prune_expert = args.prune_expert
+prune_expert_strategy = args.prune_expert_strategy
 
 # load dynamic weights
-layer_idx_to_expert_idxs = json.load(
-    open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
-layer_idx_to_expert_idxs = {
-    int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+if num_prune_expert == 0:
+    layer_idx_to_expert_idxs = {idx: [] for idx in range(27)}
+elif num_prune_expert == 6 and prune_expert_strategy == "greedy_jl":
+    layer_idx_to_expert_idxs = json.load(
+        open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
+    layer_idx_to_expert_idxs = {
+        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
 for key, value in dynamic_weight_tmp.items():
@@ -224,7 +232,7 @@ print("compute origin layer output cost {}".format(e-s))
 
 # prune
 
-beam_size = 2
+beam_size = 1
 max_greedy_layer_num = 15
 beam_prune_layer_idx_list = [[]]
 # prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
@@ -234,7 +242,8 @@ output_dict = {"layer_idxs": [],
                "layer_num": []}
 try:
     while (len(beam_prune_layer_idx_list[0]) < max_greedy_layer_num):
-        print("the {}th iteration".format(len(beam_prune_layer_idx_list[0])), flush=True)
+        print("the {}th iteration".format(
+            len(beam_prune_layer_idx_list[0])), flush=True)
         new_prune_layer_idx_list_with_jl = []
 
         for prune_layer_idx_list in beam_prune_layer_idx_list:
@@ -244,7 +253,6 @@ try:
             print("exist prune layers {}; candidate prune layers {}".format(
                 prune_layer_idx_list, candidate_layer_idx_list), flush=True)
 
-            
             for candidate_idx in candidate_layer_idx_list:  # greedy search expert
                 start_time = time.time()
                 tmp_layer_list = prune_layer_idx_list + [candidate_idx]
@@ -269,21 +277,22 @@ try:
                 output_dict["layer_idxs"].append(tmp_layer_list)
                 output_dict["layer_num"].append(len(tmp_layer_list))
 
-                new_prune_layer_idx_list_with_jl.append((tuple(tmp_layer_list), mean_jl))
+                new_prune_layer_idx_list_with_jl.append(
+                    (tuple(tmp_layer_list), mean_jl))
 
-        
-        new_prune_layer_idx_list_with_jl = sorted(new_prune_layer_idx_list_with_jl, key=lambda x: x[1])
+        new_prune_layer_idx_list_with_jl = sorted(
+            new_prune_layer_idx_list_with_jl, key=lambda x: x[1])
         new_prune_layer_idx_list_with_jl = new_prune_layer_idx_list_with_jl[:beam_size]
         for prune_layer_idx_tuple, jl in new_prune_layer_idx_list_with_jl:
             output_dict["mean_jl"].append(jl)
             output_dict["layer_idxs"].append(prune_layer_idx_tuple)
             output_dict["layer_num"].append(len(prune_layer_idx_tuple))
-        beam_prune_layer_idx_list = [list(t) for t,j in new_prune_layer_idx_list_with_jl]
-
+        beam_prune_layer_idx_list = [
+            list(t) for t, j in new_prune_layer_idx_list_with_jl]
 
     output_df = pd.DataFrame(output_dict)
     output_df.to_excel(
-        "greedy_search_layer_jl_beam{}.xlsx".format(beam_size))
+        "greedy_search_layer_prune_expert{}_stratedy{}_jl_beam{}.xlsx".format(num_prune_expert, prune_expert_strategy, beam_size))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
