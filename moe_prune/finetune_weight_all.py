@@ -133,6 +133,7 @@ for key, value in dynamic_weight_tmp.items():
     expert_idx = int(key[1])
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
+print(dynamic_weights)
 
 # ppl order pruning single layer
 if prune_num_expert == 0:
@@ -140,9 +141,7 @@ if prune_num_expert == 0:
     #                             15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
     # layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [10, 17, 22, 1, 12,
-                                21, 6, 15, 7, 19, 24, 9]  # greedy by ppl
-    layer_idx_list_ppl_order = [19, 12, 7, 23, 10, 14,
-                                1, 24, 17, 15, 9, 21, 18, 6, 26]  # greedy by jl
+                                21, 6, 15, 7, 19, 24, 9]
 elif prune_num_expert == 6 and score_mode == "random":
     # layer_idx_list_ppl_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
     #                             24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
@@ -162,19 +161,18 @@ elif prune_num_expert == 6 and score_mode == "distribution":
     layer_idx_list_ppl_order = [14, 9, 1, 21, 22,
                                 6, 17, 10, 12, 7, 15, 24]
 elif prune_num_expert == 6 and score_mode == "greedy_jl":
-    layer_idx_list_ppl_order = [19, 15, 22, 10,
-                                12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+    layer_idx_list_ppl_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
 
 
 # add expert weight to prune layer
 for param in model.parameters():
     param.requires_grad = False
 
-prune_layer_idx_to_expert_idx = {}  # build prune layer and expert
+
+prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
-
 # set global variable
 prune_layer_list.append(prune_layer_idx_to_expert_idx)
 layer_num_list.append(num_layer)
@@ -184,22 +182,22 @@ layer_num_list.append(num_layer)
 def check_if_lora(module_name):
     try:
         layer_id = int(module_name.split(".")[2])
+        expert_id = int(module_name.split(".")[5])
     except:
         return False
     moe_layer_id = layer_id - 1
     # print(moe_layer_id, expert_id)
-    if moe_layer_id in prune_layer_idx_to_expert_idx and "shared" in module_name:
+    if moe_layer_id in prune_layer_idx_to_expert_idx and expert_id in prune_layer_idx_to_expert_idx[moe_layer_id]:
         return True
     return False
 
 
-linear_module_list = []
 for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)):
-        linear_module_list.append(name)
-finetune_module_list = list(filter(check_if_lora, linear_module_list))
-print("finetune_module_list: {}".format(finetune_module_list))
-
+    if isinstance(module, (torch.nn.Linear)) and check_if_lora(name):
+        for param in module.parameters():
+            param.requires_grad = True
+# finetune_module_list = list(filter(check_if_lora, linear_module_list))
+# print("finetune_module_list: {}".format(finetune_module_list))
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -212,26 +210,24 @@ def print_trainable_parameters(model):
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.2f}"
     )
 
-
 print_trainable_parameters(model)
-config = LoraConfig(
-    r=8,
-    lora_alpha=16,
-    target_modules=finetune_module_list,
-    lora_dropout=0.01,
-    bias="none"
-    # task_type="SEQ_2_SEQ_LM",
-)
-lora_model = get_peft_model(model, config)
-print_trainable_parameters(lora_model)
+# config = LoraConfig(
+#     r=8,
+#     lora_alpha=16,
+#     target_modules=finetune_module_list,
+#     lora_dropout=0.01,
+#     bias="none"
+#     # task_type="SEQ_2_SEQ_LM",
+# )
+# lora_model = get_peft_model(model, config)
+# print_trainable_parameters(lora_model)
 
 # exit()
 # finetune
 # 加载数据集
 dataset = load_dataset('json', data_files=[
                        args.input])
-eval_dataset = load_dataset(
-    'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
+eval_dataset = load_dataset('json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
 
 # 假设你正在使用GPT-2模型（你可以根据需要更改为其他模型）
@@ -260,19 +256,28 @@ eval_tokenized_datasets = eval_dataset.map(
 
 # 设置训练参数
 
-output_file = "finetune_lora_only_shared_layer_{}.json".format(
-    score_mode, prune_num_layer)
-output_dir = "deepseek_model/finetune_lora"
+output_file = "finetune_all_score_mode_{}_layer_{}".format(
+        score_mode, prune_num_layer)
+output_dir = "/root/autodl-tmp/deepseek-ai"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
+from transformers import Trainer, TrainingArguments, EvalPrediction
+def compute_metrics(eval_pred: EvalPrediction):
+    logits, labels = eval_pred
+    # Calculate loss
+    loss = torch.nn.CrossEntropyLoss()(torch.tensor(logits), torch.tensor(labels)).item()
+    return {"eval_loss": loss}
+
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter(log_dir=os.path.join(output_dir, output_file, "run_log"))
 output_path = os.path.join(output_dir, output_file)
 training_args = TrainingArguments(
     output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
-    save_steps=200,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    save_steps=10000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
@@ -281,13 +286,16 @@ training_args = TrainingArguments(
     warmup_steps=100,
     eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     eval_strategy="steps",
+    logging_dir=os.path.join(output_dir, output_file, "run_log")
     # 注意：其他参数可以根据需要进行调整
 )
 # 初始化Trainer
 trainer = Trainer(
-    model=lora_model,
+    model=model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
     eval_dataset=eval_tokenized_datasets["train"],
+    compute_metrics=compute_metrics
 )
 trainer.train()
+
