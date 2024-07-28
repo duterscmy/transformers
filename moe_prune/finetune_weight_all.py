@@ -191,9 +191,20 @@ def check_if_lora(module_name):
         return True
     return False
 
+def check_if_lora_2(module_name):
+    try:
+        layer_id = int(module_name.split(".")[2])
+    except:
+        return False
+    moe_layer_id = layer_id - 1
+    # print(moe_layer_id, expert_id)
+    if moe_layer_id in prune_layer_idx_to_expert_idx and "shared" in module_name:
+        return True
+    return False
+
 
 for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and check_if_lora(name):
+    if isinstance(module, (torch.nn.Linear)) and (check_if_lora(name) or check_if_lora_2(name)):
         for param in module.parameters():
             param.requires_grad = True
 # finetune_module_list = list(filter(check_if_lora, linear_module_list))
