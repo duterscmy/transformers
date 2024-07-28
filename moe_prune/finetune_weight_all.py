@@ -284,8 +284,8 @@ training_args = TrainingArguments(
     learning_rate=1e-5,
     lr_scheduler_type="cosine",
     warmup_steps=100,
-    eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
-    eval_strategy="steps",
+    # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    # eval_strategy="steps",
     logging_dir=os.path.join(output_dir, output_file, "run_log")
     # 注意：其他参数可以根据需要进行调整
 )
@@ -294,7 +294,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
-    eval_dataset=eval_tokenized_datasets["train"],
+    # eval_dataset=eval_tokenized_datasets["train"],
     compute_metrics=compute_metrics
 )
 trainer.train()
