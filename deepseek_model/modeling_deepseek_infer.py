@@ -413,10 +413,10 @@ class DeepseekMoE(nn.Module):
 
         self.layer_num = 27
         self.num_route_experts = 6
-        self.prune_layer_num = 9
+        self.prune_layer_num = 12
 
         # self.score_mode = "random"
-        self.score_mode = "distribute"
+        self.score_mode = "greedy_jl"
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
         if self.num_route_experts == 0:
             self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
@@ -507,13 +507,13 @@ class DeepseekMoE(nn.Module):
             if relative_layer in self.prune_layer_idxs:
                 prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
                 prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-                # print("layer_num {} current_layer {}, use PUNE layer".format(
-                #     self.layer_num, global_layer))
+                print("layer_num {} current_layer {}, use PUNE layer".format(
+                    self.layer_num, global_layer))
                 output = self.forward_prune(
                     inputs, prune_expert_idxs, relative_layer)
             else:
-                # print("layer_num {} current_layer {}, use ROUTE layer".format(
-                #     self.layer_num, global_layer))
+                print("layer_num {} current_layer {}, use ROUTE layer".format(
+                    self.layer_num, global_layer))
                 output = self.forward_route(inputs)
         except Exception as e:
             err_msg = traceback.format_exc()

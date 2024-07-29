@@ -240,30 +240,18 @@ def check_if_prune(module_name):
         return True
     return False
 
-print(layer_idx_to_expert_idxs)
+print(prune_layer_idx_to_expert_idx)
 num_prune_module = 0
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and check_if_prune(name):
-        print(name)
+        # print(name)
         num_prune_module +=1
         for param in module.parameters():
             param.requires_grad = False
             param.data = torch.tensor(0.1, dtype=param.dtype, device=param.device)
 print("prune {} module".format(num_prune_module))
 print_trainable_parameters(model)
-exit()
-# config = LoraConfig(
-#     r=8,
-#     lora_alpha=16,
-#     target_modules=finetune_module_list,
-#     lora_dropout=0.01,
-#     bias="none"
-#     # task_type="SEQ_2_SEQ_LM",
-# )
-# lora_model = get_peft_model(model, config)
-# print_trainable_parameters(lora_model)
 
-# exit()
 # finetune
 # 加载数据集
 dataset = load_dataset('json', data_files=[
