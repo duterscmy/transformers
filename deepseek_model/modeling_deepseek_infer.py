@@ -500,25 +500,25 @@ class DeepseekMoE(nn.Module):
         self.dynamic_weights = dynamic_weights
 
     def forward(self, inputs):
-        try:
-            global global_layer
-            relative_layer = global_layer % self.layer_num
-            global_layer += 1
-            if relative_layer in self.prune_layer_idxs:
-                prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
-                prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-                print("layer_num {} current_layer {}, use PUNE layer".format(
-                    self.layer_num, global_layer))
-                output = self.forward_prune(
-                    inputs, prune_expert_idxs, relative_layer)
-            else:
-                print("layer_num {} current_layer {}, use ROUTE layer".format(
-                    self.layer_num, global_layer))
-                output = self.forward_route(inputs)
-        except Exception as e:
-            err_msg = traceback.format_exc()
-            print(e, err_msg)
+        # try:
+        global global_layer
+        relative_layer = global_layer % self.layer_num
+        global_layer += 1
+        if relative_layer in self.prune_layer_idxs:
+            prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
+            prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
+            print("layer_num {} current_layer {}, use PUNE layer".format(
+                self.layer_num, relative_layer))
+            output = self.forward_prune(
+                inputs, prune_expert_idxs, relative_layer)
+        else:
+            print("layer_num {} current_layer {}, use ROUTE layer".format(
+                self.layer_num, relative_layer))
             output = self.forward_route(inputs)
+        # except Exception as e:
+        #     err_msg = traceback.format_exc()
+        #     print(e, err_msg)
+        #     output = self.forward_route(inputs)
         return output
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
