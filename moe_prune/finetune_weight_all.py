@@ -136,7 +136,6 @@ for key, value in dynamic_weight_tmp.items():
     expert_idx = int(key[1])
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
-print(dynamic_weights)
 
 # ppl order pruning single layer
 if prune_num_expert == 0:
@@ -207,6 +206,17 @@ def check_if_lora_2(module_name):
         return True
     return False
 
+def check_if_prune(module_name):
+    try:
+        layer_id = int(module_name.split(".")[2])
+        expert_id = int(module_name.split(".")[5])
+    except:
+        return False
+    moe_layer_id = layer_id - 1
+    # print(moe_layer_id, expert_id)
+    if moe_layer_id in prune_layer_idx_to_expert_idx and expert_id not in prune_layer_idx_to_expert_idx[moe_layer_id]:
+        return True
+    return False
 
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and (check_if_lora(name) or check_if_lora_2(name)):
@@ -214,7 +224,6 @@ for name, module in model.named_modules():
             param.requires_grad = True
 # finetune_module_list = list(filter(check_if_lora, linear_module_list))
 # print("finetune_module_list: {}".format(finetune_module_list))
-
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -228,6 +237,13 @@ def print_trainable_parameters(model):
     )
 
 
+print_trainable_parameters(model)
+
+for name, module in model.named_modules():
+    if isinstance(module, (torch.nn.Linear)) and check_if_prune(name):
+        for param in module.parameters():
+            param.requires_grad = False
+            param.data = torch.tensor(0.1, dtype=param.dtype, device=param.device)
 print_trainable_parameters(model)
 # config = LoraConfig(
 #     r=8,
