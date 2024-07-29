@@ -211,6 +211,31 @@ def print_trainable_parameters(model):
     )
 
 print_trainable_parameters(model)
+
+def check_if_prune(module_name):
+    # prune experts
+    try:
+        layer_id = int(module_name.split(".")[2])
+        expert_id = int(module_name.split(".")[5])
+    except:
+        return False
+    moe_layer_id = layer_id - 1
+    # print(moe_layer_id, expert_id)
+    if moe_layer_id in prune_layer_idx_to_expert_idx and expert_id not in prune_layer_idx_to_expert_idx[moe_layer_id]:
+        return True
+    return False
+
+num_prune_module = 0
+for name, module in model.named_modules():
+    if isinstance(module, (torch.nn.Linear)) and check_if_prune(name):
+        # print(name)
+        num_prune_module +=1
+        for param in module.parameters():
+            param.requires_grad = False
+            param.data = torch.tensor(0.1, dtype=param.dtype, device=param.device)
+print("prune {} module".format(num_prune_module))
+
+print_trainable_parameters(model)
 config = LoraConfig(
     r=8,
     lora_alpha=16,
@@ -221,6 +246,7 @@ config = LoraConfig(
 )
 lora_model = get_peft_model(model, config)
 print_trainable_parameters(lora_model)
+
 
 # exit()
 # finetune
