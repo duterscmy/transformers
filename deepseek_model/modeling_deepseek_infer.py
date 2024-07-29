@@ -525,6 +525,8 @@ class DeepseekMoE(nn.Module):
         identity = hidden_states
         outputs = []
         for _expert_idx in _prune_expert_idxs:
+            print("layer idx {}, expert idx {}".format(_relative_layer, _expert_idx))
+            print(self.experts[_expert_idx].gate_proj.data.size())
             output = self.experts[_expert_idx](identity)
             try:
                 expert_weight = self.dynamic_weights[(
