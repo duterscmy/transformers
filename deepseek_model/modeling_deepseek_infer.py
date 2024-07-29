@@ -481,7 +481,7 @@ class DeepseekMoE(nn.Module):
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         elif self.score_mode == "greedy_jl":
             expert_order_path = os.path.join(
-                current_dir, "layer_idx_to_expert_idx.random.json")
+                current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
@@ -507,13 +507,13 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            print("layer_num {} current_layer {}, use PUNE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, use PUNE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_route(inputs)
         # except Exception as e:
         #     err_msg = traceback.format_exc()
@@ -525,8 +525,8 @@ class DeepseekMoE(nn.Module):
         identity = hidden_states
         outputs = []
         for _expert_idx in _prune_expert_idxs:
-            print("layer idx {}, expert idx {}".format(_relative_layer, _expert_idx))
-            print(self.experts[_expert_idx].gate_proj.data.size())
+            # print("layer idx {}, expert idx {}".format(_relative_layer, _expert_idx))
+            # print(self.experts[_expert_idx].gate_proj.data.size())
             output = self.experts[_expert_idx](identity)
             try:
                 expert_weight = self.dynamic_weights[(
