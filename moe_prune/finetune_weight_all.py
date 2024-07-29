@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from torch.utils.tensorboard import SummaryWriter
+from torch.optim import Optimizer
+from transformers import Trainer, TrainingArguments, EvalPrediction
 from peft import LoraConfig, get_peft_model
 import shutil
 import traceback
@@ -161,7 +164,8 @@ elif prune_num_expert == 6 and score_mode == "distribution":
     layer_idx_list_ppl_order = [14, 9, 1, 21, 22,
                                 6, 17, 10, 12, 7, 15, 24]
 elif prune_num_expert == 6 and score_mode == "greedy_jl":
-    layer_idx_list_ppl_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+    layer_idx_list_ppl_order = [19, 15, 22, 10,
+                                12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
 
 
 # add expert weight to prune layer
@@ -191,6 +195,7 @@ def check_if_lora(module_name):
         return True
     return False
 
+
 def check_if_lora_2(module_name):
     try:
         layer_id = int(module_name.split(".")[2])
@@ -210,6 +215,7 @@ for name, module in model.named_modules():
 # finetune_module_list = list(filter(check_if_lora, linear_module_list))
 # print("finetune_module_list: {}".format(finetune_module_list))
 
+
 def print_trainable_parameters(model):
     trainable_params = 0
     all_param = 0
@@ -220,6 +226,7 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.2f}"
     )
+
 
 print_trainable_parameters(model)
 # config = LoraConfig(
@@ -238,7 +245,8 @@ print_trainable_parameters(model)
 # 加载数据集
 dataset = load_dataset('json', data_files=[
                        args.input])
-eval_dataset = load_dataset('json', data_files=["datasets/sample_questions_from_6_dataset.json"])
+eval_dataset = load_dataset(
+    'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
 
 # 假设你正在使用GPT-2模型（你可以根据需要更改为其他模型）
@@ -268,20 +276,33 @@ eval_tokenized_datasets = eval_dataset.map(
 # 设置训练参数
 
 output_file = "finetune_all_score_mode_{}_layer_{}".format(
-        score_mode, prune_num_layer)
+    score_mode, prune_num_layer)
 output_dir = "/root/autodl-tmp/deepseek-ai"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
-from transformers import Trainer, TrainingArguments, EvalPrediction
+
 def compute_metrics(eval_pred: EvalPrediction):
     logits, labels = eval_pred
     # Calculate loss
-    loss = torch.nn.CrossEntropyLoss()(torch.tensor(logits), torch.tensor(labels)).item()
+    loss = torch.nn.CrossEntropyLoss()(
+        torch.tensor(logits), torch.tensor(labels)).item()
     return {"eval_loss": loss}
 
-from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter(log_dir=os.path.join(output_dir, output_file, "run_log"))
+
+def get_custom_schedule_with_warmup(optimizer: Optimizer, num_warmup_steps: int, num_training_steps: int, min_lr: float):
+    def lr_lambda(current_step: int):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        progress = float(current_step - num_warmup_steps) / \
+            float(max(1, num_training_steps - num_warmup_steps))
+        return max(min_lr, 1.0 - progress)
+
+    return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
+
+writer = SummaryWriter(log_dir=os.path.join(
+    output_dir, output_file, "run_log"))
 output_path = os.path.join(output_dir, output_file)
 training_args = TrainingArguments(
     output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
@@ -292,21 +313,36 @@ training_args = TrainingArguments(
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
-    learning_rate=1e-5,
-    lr_scheduler_type="cosine",
+    learning_rate=2e-5,
+    # lr_scheduler_type="cosine",
     warmup_steps=100,
     # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     # eval_strategy="steps",
     logging_dir=os.path.join(output_dir, output_file, "run_log")
     # 注意：其他参数可以根据需要进行调整
 )
+
+# Calculate total training steps
+num_training_steps = len(
+    tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
+
+# Define minimum learning rate
+min_lr = 5e-6
+
+# Create the optimizer
+optimizer = torch.optim.AdamW(
+    model.parameters(), lr=training_args.learning_rate)
+
+# Create the custom scheduler
+scheduler = get_custom_schedule_with_warmup(
+    optimizer, training_args.warmup_steps, num_training_steps, min_lr)
 # 初始化Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_datasets['train'],
     # eval_dataset=eval_tokenized_datasets["train"],
-    compute_metrics=compute_metrics
+    compute_metrics=compute_metrics,
+    optimizers=(optimizer, scheduler)
 )
 trainer.train()
-
