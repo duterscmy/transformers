@@ -28,7 +28,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
 parser.add_argument("--model", default="./deepseek",
-                    help="模型路径")
+                    help="预训练模型路径")
+parser.add_argument("--output-dir", default="/root/autodl-tmp/deepseek-ai",
+                    help="保存模型的路径")
+
 parser.add_argument("--batch-size", type=int, default=8, help="并行解码的样本数量")
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
@@ -208,10 +211,12 @@ def check_if_lora_2(module_name):
         return True
     return False
 
+
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and (check_if_lora(name) or check_if_lora_2(name)):
         for param in module.parameters():
             param.requires_grad = True
+
 
 def print_trainable_parameters(model):
     trainable_params = 0
@@ -227,6 +232,7 @@ def print_trainable_parameters(model):
 
 print_trainable_parameters(model)
 
+
 def check_if_prune(module_name):
     # prune experts
     try:
@@ -240,15 +246,17 @@ def check_if_prune(module_name):
         return True
     return False
 
+
 print(prune_layer_idx_to_expert_idx)
 num_prune_module = 0
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and check_if_prune(name):
         # print(name)
-        num_prune_module +=1
+        num_prune_module += 1
         for param in module.parameters():
             param.requires_grad = False
-            param.data = torch.tensor(0.1, dtype=param.dtype, device=param.device)
+            param.data = torch.tensor(
+                0.1, dtype=param.dtype, device=param.device)
 print("prune {} module".format(num_prune_module))
 print_trainable_parameters(model)
 
@@ -283,7 +291,7 @@ eval_tokenized_datasets = eval_dataset.map(
 
 output_file = "finetune_all_score_mode_{}_layer_{}_expert{}".format(
     score_mode, prune_num_layer, prune_num_expert)
-output_dir = "/root/autodl-tmp/deepseek-ai"
+output_dir = args.output_dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
@@ -310,6 +318,7 @@ def get_custom_schedule_with_warmup(optimizer: Optimizer, num_warmup_steps: int,
 writer = SummaryWriter(log_dir=os.path.join(
     output_dir, output_file, "run_log"))
 output_path = os.path.join(output_dir, output_file)
+
 training_args = TrainingArguments(
     output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
