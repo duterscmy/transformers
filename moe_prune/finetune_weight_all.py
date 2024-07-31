@@ -147,6 +147,8 @@ if prune_num_expert == 0:
     # layer_idx_list_ppl_order = [layer-1 for layer in layer_idx_list_ppl_order]
     layer_idx_list_ppl_order = [10, 17, 22, 1, 12,
                                 21, 6, 15, 7, 19, 24, 9]
+    layer_idx_list_ppl_order = [19, 12, 7, 23, 10, 14,
+                                1, 24, 17, 15, 9, 21, 18, 6, 26]  # greedy by jl
 elif prune_num_expert == 6 and score_mode == "random":
     # layer_idx_list_ppl_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
     #                             24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
