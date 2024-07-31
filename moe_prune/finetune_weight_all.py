@@ -36,7 +36,7 @@ parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B�
 
 
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
-parser.add_argument("--prune-num-expert", default=0, type=int,
+parser.add_argument("--prune-num-expert", default=6, type=int,
                     help="剪枝后剩余的expert数量")
 parser.add_argument("--prune-num-layer", default=9, type=int,
                     help="剪枝后剩余的layer数量")
@@ -279,15 +279,10 @@ tokenized_datasets = dataset.map(
 
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
-# tokenized_datasets = tokenized_datasets.map(add_labels, batched=True)
-# 设置格式化输出
-# tokenized_datasets.set_format(
-#     type='torch', columns=['input_ids', 'attention_mask'])
 
-# 设置训练参数
 
-output_file = "finetune_all_score_mode_{}_layer_{}".format(
-    score_mode, prune_num_layer)
+output_file = "finetune_all_score_mode_{}_layer_{}_expert{}".format(
+    score_mode, prune_num_layer, prune_num_expert)
 output_dir = "/root/autodl-tmp/deepseek-ai"
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
