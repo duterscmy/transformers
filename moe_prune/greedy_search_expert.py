@@ -186,7 +186,7 @@ with open(args.input, 'r') as fp:
             question = json.loads(line)
             questions.append(question)
 raw_questions = list(map(lambda x: x["text"], questions))
-
+print("calibration data size: {}".format(len(raw_questions)))
 
 batch_size = args.batch_size
 num_layer = args.num_layer
