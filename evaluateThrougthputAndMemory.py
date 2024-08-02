@@ -25,7 +25,7 @@ dataset = load_dataset("json", \
                         trust_remote_code=True,
                         split='train')
 # Load the model and tokenizer
-model = AutoModelForCausalLM.from_pretrained(args.model_name,trust_remote_code=True).half().cuda()
+model = AutoModelForCausalLM.from_pretrained(args.model_name,trust_remote_code=True,ignore_mismatched_sizes=True).half().cuda()
 tokenizer = AutoTokenizer.from_pretrained(args.model_name,trust_remote_code=True)
 
 # Add padding token if not present
