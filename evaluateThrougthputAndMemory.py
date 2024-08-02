@@ -20,7 +20,7 @@ parser.add_argument('--num_repeats', type=int, default=500, help="Number of time
 args = parser.parse_args()
 
 # Load the model and tokenizer
-model = AutoModelForCausalLM.from_pretrained(args.model_name).cuda()
+model = AutoModelForCausalLM.from_pretrained(args.model_name).half().cuda()
 tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 
 # Add padding token if not present
