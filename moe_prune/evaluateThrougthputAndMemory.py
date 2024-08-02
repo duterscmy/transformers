@@ -76,6 +76,10 @@ for name, module in model.named_modules():
             param.requires_grad = False
             param.data = torch.tensor(
                 [[0.1]], dtype=param.dtype, device=param.device)
+
+torch.cuda.empty_cache()
+import time
+time.sleep(3)
 print(
     f"Average memory used during inference: {torch.cuda.max_memory_allocated()/1024**2} MB")
 print_trainable_parameters(model)
