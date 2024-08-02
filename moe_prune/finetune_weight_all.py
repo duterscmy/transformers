@@ -22,7 +22,10 @@ import time
 
 from transformers.models.qwen2_moe.expert_idx import *
 from config import get_layer_idx_order, dynamic_weights, get_layer_idx_to_expert_idx
-from utils import print_trainable_parameters
+from utils import print_trainable_parameters, \
+    classify_shared_experts, \
+    classify_remained_experts, \
+    classify_pruned_experts
 
 
 parser = argparse.ArgumentParser()
@@ -108,10 +111,6 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 layer_idx_to_expert_idxs = get_layer_idx_to_expert_idx(score_mode)
 layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
 
-# add expert weight to prune layer
-for param in model.parameters():
-    param.requires_grad = False
-
 
 prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
@@ -119,51 +118,13 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
 print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
-
-def check_if_lora(module_name):
-    '''classify the remained experts in prune layers'''
-    try:
-        layer_id = int(module_name.split(".")[2])
-        expert_id = int(module_name.split(".")[5])
-    except:
-        return False
-    moe_layer_id = layer_id - 1
-    # print(moe_layer_id, expert_id)
-    if moe_layer_id in prune_layer_idx_to_expert_idx and expert_id in prune_layer_idx_to_expert_idx[moe_layer_id]:
-        return True
-    return False
-
-
-def check_if_lora_2(module_name):
-    '''classify the shared experts in prune layers'''
-    try:
-        layer_id = int(module_name.split(".")[2])
-    except:
-        return False
-    moe_layer_id = layer_id - 1
-    # print(moe_layer_id, expert_id)
-    if moe_layer_id in prune_layer_idx_to_expert_idx and "shared" in module_name:
-        return True
-    return False
-
-
-def check_if_prune(module_name):
-    '''classify the pruned experts in prune layers'''
-    try:
-        layer_id = int(module_name.split(".")[2])
-        expert_id = int(module_name.split(".")[5])
-    except:
-        return False
-    moe_layer_id = layer_id - 1
-    # print(moe_layer_id, expert_id)
-    if moe_layer_id in prune_layer_idx_to_expert_idx and expert_id not in prune_layer_idx_to_expert_idx[moe_layer_id]:
-        return True
-    return False
-
-
 # set //remained experts and shared experts// of prune layer to require gradient
+for param in model.parameters():
+    param.requires_grad = False
 for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and (check_if_lora(name) or check_if_lora_2(name)):
+    if isinstance(module, (torch.nn.Linear)) and \
+        (classify_shared_experts(name, prune_layer_idx_to_expert_idx) or\
+          classify_remained_experts(name, prune_layer_idx_to_expert_idx)):
         for param in module.parameters():
             param.requires_grad = True
 print_trainable_parameters(model)
@@ -171,7 +132,8 @@ print_trainable_parameters(model)
 # set //prune experts// of prune layer to empty to reduce memory
 num_prune_module = 0
 for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and check_if_prune(name):
+    if isinstance(module, (torch.nn.Linear)) and \
+        classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
         # print(name)
         num_prune_module += 1
         for param in module.parameters():
