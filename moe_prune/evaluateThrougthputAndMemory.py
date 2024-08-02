@@ -57,7 +57,7 @@ for param in model.parameters():
     param.requires_grad = False
 
 print(
-    f"Average memory used during inference: {torch.cuda.max_memory_allocated()/1024**2} MB")
+    f"Average memory used during inference: {torch.cuda.memory_allocated()/1024**2} MB")
 print_trainable_parameters(model)
 
 # prune layer idx and expert idx
@@ -81,7 +81,7 @@ torch.cuda.empty_cache()
 import time
 time.sleep(3)
 print(
-    f"Average memory used during inference: {torch.cuda.max_memory_allocated()/1024**2} MB")
+    f"Average memory used during inference: {torch.cuda.memory_allocated()/1024**2} MB")
 print_trainable_parameters(model)
 
 # Add padding token if not present
@@ -137,7 +137,7 @@ for _ in range(args.num_repeats):
     end_time = time.time()
 
     torch.cuda.synchronize()
-    after_memory_allocated = torch.cuda.max_memory_allocated()
+    after_memory_allocated = torch.cuda.memory_allocated()
     memory_usages.append(after_memory_allocated)
     # memory_usages_before.append(before_memory_allocated)
     inference_time = end_time - start_time
