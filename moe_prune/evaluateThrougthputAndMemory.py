@@ -53,7 +53,11 @@ model = AutoModelForCausalLM.from_pretrained(
     args.model_name, trust_remote_code=True,).half().cuda()
 tokenizer = AutoTokenizer.from_pretrained(
     args.model_name, trust_remote_code=True)
-print("MEM: {}".format(torch.cuda.max_memory_allocated()))
+for param in model.parameters():
+    param.requires_grad = False
+
+print(
+    f"Average memory used during inference: {torch.cuda.max_memory_allocated()/1024**2} MB")
 print_trainable_parameters(model)
 
 # prune layer idx and expert idx
@@ -72,7 +76,8 @@ for name, module in model.named_modules():
             param.requires_grad = False
             param.data = torch.tensor(
                 [[0.1]], dtype=param.dtype, device=param.device)
-print("MEM: {}".format(torch.cuda.max_memory_allocated()))
+print(
+    f"Average memory used during inference: {torch.cuda.max_memory_allocated()/1024**2} MB")
 print_trainable_parameters(model)
 
 # Add padding token if not present
