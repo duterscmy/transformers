@@ -118,7 +118,9 @@ def model_inference(model, inputs):
 sample_batch = encoded_dataset.select(range(args.batch_size))
 inputs = {key: torch.tensor(val).cuda() for key, val in sample_batch.to_dict(
 ).items() if key in tokenizer.model_input_names}
-
+print(len(inputs))
+for k, v in inputs.items():
+    print(k, v.size())
 
 memory_usages = []
 inference_times = []
