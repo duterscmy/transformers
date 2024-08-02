@@ -53,7 +53,7 @@ print_trainable_parameters(model)
 
 
 import torch.nn as nn 
-model.layers = nn.ModuleList(model.layers[:-prune_num_layer])
+model.model.layers = nn.ModuleList(model.model.layers[:-prune_num_layer])
 
 torch.cuda.empty_cache()
 
