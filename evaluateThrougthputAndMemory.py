@@ -29,7 +29,11 @@ if tokenizer.pad_token is None:
     model.resize_token_embeddings(len(tokenizer))
 
 # Load a sample of the Wiki dataset
-dataset = load_dataset("json", data_files="datasets/c4-train.00000-of-01024.head2k.json",trust_remote_code=True)
+dataset = load_dataset("json", \
+                       data_files="datasets/c4-train.00000-of-01024.head2k.json",\
+                        trust_remote_code=True)
+
+print(dataset)
 
 # Preprocess the dataset
 def preprocess_function(examples):
