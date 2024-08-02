@@ -38,7 +38,7 @@ def get_layer_idx_order(prune_num_expert, score_mode):
         layer_idx_list_ppl_order = [19, 15, 22, 10,
                                     12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]  # greedy jl
 
-    return
+    return layer_idx_list_ppl_order
 
 
 def get_layer_idx_to_expert_idx(score_mode):
