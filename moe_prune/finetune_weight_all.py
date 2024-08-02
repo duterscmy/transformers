@@ -21,8 +21,8 @@ import json
 import time
 
 from transformers.models.qwen2_moe.expert_idx import *
-from .config import get_layer_idx_order, dynamic_weights, get_layer_idx_to_expert_idx
-from .utils import print_trainable_parameters
+from config import get_layer_idx_order, dynamic_weights, get_layer_idx_to_expert_idx
+from utils import print_trainable_parameters
 
 
 parser = argparse.ArgumentParser()
