@@ -21,9 +21,10 @@ args = parser.parse_args()
 
 # Load a sample of the Wiki dataset
 dataset = load_dataset("json", \
-                       data_files="datasets/c4-train.00000-of-01024.5w.json",\
+                       data_files="datasets/c4-train.00000-of-01024.head2k.json",\
                         trust_remote_code=True,
                         split='train')
+print(dataset)
 # Load the model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(args.model_name,trust_remote_code=True,ignore_mismatched_sizes=True).half().cuda()
 tokenizer = AutoTokenizer.from_pretrained(args.model_name,trust_remote_code=True)
@@ -32,8 +33,6 @@ tokenizer = AutoTokenizer.from_pretrained(args.model_name,trust_remote_code=True
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
     model.resize_token_embeddings(len(tokenizer))
-
-print(dataset)
 
 # Preprocess the dataset
 def preprocess_function(examples):
