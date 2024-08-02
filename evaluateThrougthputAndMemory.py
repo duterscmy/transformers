@@ -21,7 +21,7 @@ args = parser.parse_args()
 
 # Load a sample of the Wiki dataset
 dataset = load_dataset("json", \
-                       data_files="datasets/c4-train.00000-of-01024.head2k.json",\
+                       data_files="datasets/c4-train.00000-of-01024.5w.json",\
                         trust_remote_code=True,
                         split='train')
 # Load the model and tokenizer
