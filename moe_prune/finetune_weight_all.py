@@ -177,7 +177,7 @@ for name, module in model.named_modules():
         for param in module.parameters():
             param.requires_grad = False
             param.data = torch.tensor(
-                0.1, dtype=param.dtype, device=param.device)
+                [[0.1]], dtype=param.dtype, device=param.device)
 print("set {} modules to empty".format(num_prune_module))
 print_trainable_parameters(model)
 
