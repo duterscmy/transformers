@@ -19,6 +19,11 @@ parser.add_argument('--batch_size', type=int, default=1, help="Batch size for in
 parser.add_argument('--num_repeats', type=int, default=500, help="Number of times to repeat the inference for averaging")
 args = parser.parse_args()
 
+# Load a sample of the Wiki dataset
+dataset = load_dataset("json", \
+                       data_files="datasets/c4-train.00000-of-01024.head2k.json",\
+                        trust_remote_code=True,
+                        split='train')
 # Load the model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(args.model_name).half().cuda()
 tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -27,11 +32,6 @@ tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
     model.resize_token_embeddings(len(tokenizer))
-
-# Load a sample of the Wiki dataset
-dataset = load_dataset("json", \
-                       data_files="datasets/c4-train.00000-of-01024.head2k.json",\
-                        trust_remote_code=True)
 
 print(dataset)
 
