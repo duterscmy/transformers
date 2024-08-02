@@ -29,8 +29,6 @@ parser.add_argument("--prune-num-layer", default=9, type=int,
                     help="剪枝后剩余的layer数量")
 args = parser.parse_args()
 
-score_mode = args.score_mode
-prune_num_expert = args.prune_num_expert
 prune_num_layer = args.prune_num_layer
 
 # Load a sample of the Wiki dataset
