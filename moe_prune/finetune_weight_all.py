@@ -37,6 +37,8 @@ parser.add_argument("--output-dir", default="/root/autodl-tmp/deepseek-ai",
                     help="保存模型的路径")
 
 parser.add_argument("--batch-size", type=int, default=8, help="并行解码的样本数量")
+parser.add_argument("--max-length", type=int, default=256, help="finetune时的最大长度")
+parser.add_argument("--lr", type=float, default=1e-5, help="max lr")
 parser.add_argument("--num-layer", type=int, default=27,
                     help="默认为qw16B层数")  # deepseek 27 qw24
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
@@ -53,6 +55,8 @@ args = parser.parse_args()
 
 pytorch_checkpoint_path = args.model
 batch_size = args.batch_size
+max_length = args.max_length
+max_lr = args.lr
 score_mode = args.score_mode
 num_layer = args.num_layer
 num_expert = args.num_expert
@@ -155,7 +159,7 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 def tokenize_function(examples):
     x = tokenizer(examples['text'], padding="max_length",
-                  truncation=True, max_length=256, return_tensors="pt")
+                  truncation=True, max_length=max_length, return_tensors="pt")
     # Ensure labels are the same as input_ids and convert to FP32
     x["labels"] = x["input_ids"].clone()
     return x
@@ -168,8 +172,8 @@ tokenized_datasets = dataset.map(
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
-output_file = "finetune_all_score_mode_{}_layer_{}_expert{}".format(
-    score_mode, prune_num_layer, prune_num_expert)
+output_file = "finetune_all_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
+    score_mode, prune_num_layer, prune_num_expert, max_length)
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
@@ -206,7 +210,7 @@ training_args = TrainingArguments(
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
-    learning_rate=3e-5,
+    learning_rate=max_lr,
     # lr_scheduler_type="cosine",
     warmup_steps=200,
     # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
