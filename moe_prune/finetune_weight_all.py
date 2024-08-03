@@ -173,7 +173,7 @@ eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
 output_file = "finetune_all_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
-    score_mode, prune_num_layer, prune_num_expert, max_length)
+    score_mode, prune_num_layer, prune_num_expert, max_length, max_lr)
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
