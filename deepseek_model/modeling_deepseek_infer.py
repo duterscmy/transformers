@@ -413,7 +413,7 @@ class DeepseekMoE(nn.Module):
 
         self.layer_num = 27
         self.num_route_experts = 6
-        self.prune_layer_num = 12
+        self.prune_layer_num = 9
 
         # self.score_mode = "random"
         self.score_mode = "greedy_jl"
@@ -520,7 +520,7 @@ class DeepseekMoE(nn.Module):
         #     err_msg = traceback.format_exc()
         #     print(e, err_msg)
         #     output = self.forward_route(inputs)
-        return output
+        return output.to(torch.float32)
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
