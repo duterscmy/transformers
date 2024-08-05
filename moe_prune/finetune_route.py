@@ -120,24 +120,24 @@ layer_idx_to_expert_idxs = get_layer_idx_to_expert_idx(score_mode)
 layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
 
 
-# prune_layer_idx_to_expert_idx = {}
-# for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
-#     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
-#     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
-# print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
+prune_layer_idx_to_expert_idx = {}
+for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
+    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
+    prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
+print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 # set //prune experts// of prune layer to empty to reduce memory
-# num_prune_module = 0
-# for name, module in model.named_modules():
-#     if isinstance(module, (torch.nn.Linear)) and \
-#         classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-#         # print(name)
-#         num_prune_module += 1
-#         for param in module.parameters():
-#             param.requires_grad = False
-#             param.data = torch.tensor(
-#                 [[0.1]], dtype=param.dtype, device=param.device)
-# print("set {} modules to empty".format(num_prune_module))
+num_prune_module = 0
+for name, module in model.named_modules():
+    if isinstance(module, (torch.nn.Linear)) and \
+        classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
+        # print(name)
+        num_prune_module += 1
+        for param in module.parameters():
+            param.requires_grad = False
+            param.data = torch.tensor(
+                [[0.1]], dtype=param.dtype, device=param.device)
+print("set {} modules to empty".format(num_prune_module))
 
 for param in model.parameters():
     param.requires_grad = False
