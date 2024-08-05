@@ -134,8 +134,7 @@ for name, module in model.named_modules():
         # print(name)
         num_prune_module += 1
         for param in module.parameters():
-            param.requires_grad = False
-            param.data = torch.tensor(
+            param = torch.tensor(
                 [[0.1]], dtype=param.dtype, device="cuda:0")
 print("set {} modules to empty".format(num_prune_module))
 
