@@ -138,6 +138,9 @@ layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
 #             param.data = torch.tensor(
 #                 [[0.1]], dtype=param.dtype, device=param.device)
 # print("set {} modules to empty".format(num_prune_module))
+
+for param in model.parameters():
+    param.requires_grad = False
 print_trainable_parameters(model)
 
 # set route weights to trainalbe
