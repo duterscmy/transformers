@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim import Optimizer
-import torch.function as F 
+import torch.nn.functional as F 
 from transformers import Trainer, TrainingArguments, EvalPrediction
 from peft import LoraConfig, get_peft_model
 import shutil
