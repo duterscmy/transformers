@@ -147,6 +147,26 @@ for name, module in model.named_modules():
 print("set {} modules to empty".format(num_prune_module))
 print_trainable_parameters(model)
 
+# load static dynamic weights
+dynamic_weights = {}
+dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json", 'r'))
+for key, value in dynamic_weight_tmp.items():
+    key = key.split("-")
+    layer_idx = int(key[0])
+    expert_idx = int(key[1])
+    w = value[-1]
+    dynamic_weights[(layer_idx, expert_idx)] = w
+
+for layer_idx, layer in enumerate(model.model.layers):
+    moe_layer_idx = layer_idx - 1
+    for expert_idx, param in enumerate(layer.mlp.experts_weights):
+        static_weight = dynamic_weight_tmp[(moe_layer_idx, expert_idx)]
+        param.requires_grad = True
+        param.data = torch.tensor(
+            static_weight, dtype=param.dtype, device=param.device)
+print("load static expert weight")
+print_trainable_parameters(model)
+
 # finetune
 # 加载数据集
 dataset = load_dataset('json', data_files=[
@@ -243,3 +263,5 @@ trainer = Trainer(
     optimizers=(optimizer, scheduler)
 )
 trainer.train()
+
+tokenizer.save_pretrained(output_path)  

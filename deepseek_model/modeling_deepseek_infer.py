@@ -488,16 +488,17 @@ class DeepseekMoE(nn.Module):
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
 
         # 专家的动态权重
-        dynamic_weights = {}
-        dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
-        dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
-        for key, value in dynamic_weight_tmp.items():
-            key = key.split("-")
-            layer_idx = int(key[0])
-            expert_idx = int(key[1])
-            w = value[-1]
-            dynamic_weights[(layer_idx, expert_idx)] = w
-        self.dynamic_weights = dynamic_weights
+        # dynamic_weights = {}
+        # dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
+        # dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
+        # for key, value in dynamic_weight_tmp.items():
+        #     key = key.split("-")
+        #     layer_idx = int(key[0])
+        #     expert_idx = int(key[1])
+        #     w = value[-1]
+        #     dynamic_weights[(layer_idx, expert_idx)] = w
+        # self.dynamic_weights = dynamic_weights
+        self.experts_weights = nn.ParameterList([nn.Parameter(torch.randn(1, dtype=torch.float32)) for i in range(64)])
 
     def forward(self, inputs):
         # try:
@@ -529,17 +530,14 @@ class DeepseekMoE(nn.Module):
             # print(self.experts[_expert_idx].gate_proj.data.size())
             output = self.experts[_expert_idx](identity)
             try:
-                expert_weight = self.dynamic_weights[(
-                    _relative_layer, _expert_idx)]
+                # expert_weight = self.dynamic_weights[(
+                #     _relative_layer, _expert_idx)]
+                expert_weight = self.experts_weights[_expert_idx]
             except:
                 print("layer {} expert {} 无预计算的动态权重".format(
-                    _relative_layer, _expert_idx))
-                # print(self.dynamic_weights.keys())
-                # print(self.dynamic_weights[_relative_layer].keys())
-                # exit()
-                # print("no expert weight，using 0.06")
+                    _relative_layer, _expert_idx), flush=True)
                 expert_weight = 0.06
-            outputs.append(output*expert_weight)
+            outputs.append(output*expert_weight.to(torch.float32))
 
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))
