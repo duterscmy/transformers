@@ -109,6 +109,7 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
+    ignore_mismatched_sizes=True,
 )
 print(model)
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
@@ -128,6 +129,7 @@ print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 # set //remained experts and shared experts// of prune layer to require gradient
 for param in model.parameters():
     param.requires_grad = False
+
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and \
         (classify_shared_experts(name, prune_layer_idx_to_expert_idx) or\

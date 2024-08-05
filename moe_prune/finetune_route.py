@@ -109,6 +109,7 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
+    ignore_mismatched_sizes=True,
 )
 print(model)
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
@@ -119,59 +120,32 @@ layer_idx_to_expert_idxs = get_layer_idx_to_expert_idx(score_mode)
 layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
 
 
-prune_layer_idx_to_expert_idx = {}
-for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
-    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
-    prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
-print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
-
-# set //remained experts and shared experts// of prune layer to require gradient
-for param in model.parameters():
-    param.requires_grad = False
-for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and \
-        (classify_shared_experts(name, prune_layer_idx_to_expert_idx) or\
-          classify_remained_experts(name, prune_layer_idx_to_expert_idx)):
-        for param in module.parameters():
-            param.requires_grad = True
-print_trainable_parameters(model)
+# prune_layer_idx_to_expert_idx = {}
+# for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
+#     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
+#     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
+# print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 # set //prune experts// of prune layer to empty to reduce memory
-num_prune_module = 0
-for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and \
-        classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-        # print(name)
-        num_prune_module += 1
-        for param in module.parameters():
-            param.requires_grad = False
-            param.data = torch.tensor(
-                [[0.1]], dtype=param.dtype, device=param.device)
-print("set {} modules to empty".format(num_prune_module))
+# num_prune_module = 0
+# for name, module in model.named_modules():
+#     if isinstance(module, (torch.nn.Linear)) and \
+#         classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
+#         # print(name)
+#         num_prune_module += 1
+#         for param in module.parameters():
+#             param.requires_grad = False
+#             param.data = torch.tensor(
+#                 [[0.1]], dtype=param.dtype, device=param.device)
+# print("set {} modules to empty".format(num_prune_module))
 print_trainable_parameters(model)
 
-# load static dynamic weights
-dynamic_weights = {}
-dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json", 'r'))
-for key, value in dynamic_weight_tmp.items():
-    key = key.split("-")
-    layer_idx = int(key[0])
-    expert_idx = int(key[1])
-    w = value[-1]
-    dynamic_weights[(layer_idx, expert_idx)] = w
-
+# set route weights to trainalbe
 for layer_idx, layer in enumerate(model.model.layers):
     if layer_idx == 0:
         continue
-    moe_layer_idx = layer_idx - 1
     for expert_idx, param in enumerate(layer.mlp.expert_weights):
-        static_weight = dynamic_weights[(moe_layer_idx, expert_idx)]
-        if args.finetune_route_weight:
             param.requires_grad = True
-        else:
-            param.requires_grad = False
-        param.data = torch.tensor(
-            [static_weight], dtype=param.dtype, device=param.device)
 print("load static expert weight")
 print_trainable_parameters(model)
 
@@ -200,7 +174,7 @@ tokenized_datasets = dataset.map(
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
-output_file = "finetune_all_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
+output_file = "finetune_route_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
     score_mode, prune_num_layer, prune_num_expert, max_length, max_lr)
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -234,7 +208,7 @@ training_args = TrainingArguments(
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
-    save_steps=1250,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    save_steps=50000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
