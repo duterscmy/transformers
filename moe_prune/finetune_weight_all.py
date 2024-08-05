@@ -166,7 +166,7 @@ for layer_idx, layer in enumerate(model.model.layers):
         static_weight = dynamic_weights[(moe_layer_idx, expert_idx)]
         param.requires_grad = True
         param.data = torch.tensor(
-            static_weight, dtype=param.dtype, device=param.device)
+            [static_weight], dtype=param.dtype, device=param.device)
 print("load static expert weight")
 print_trainable_parameters(model)
 

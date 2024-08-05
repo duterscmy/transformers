@@ -498,7 +498,7 @@ class DeepseekMoE(nn.Module):
         #     w = value[-1]
         #     dynamic_weights[(layer_idx, expert_idx)] = w
         # self.dynamic_weights = dynamic_weights
-        self.expert_weights = nn.ParameterList([nn.Parameter(torch.randn(1, dtype=torch.float32)) for i in range(64)])
+        self.expert_weights = nn.ParameterList([nn.Parameter([torch.randn(1, dtype=torch.float32)]) for i in range(64)])
 
     def forward(self, inputs):
         # try:
@@ -532,7 +532,7 @@ class DeepseekMoE(nn.Module):
             try:
                 # expert_weight = self.dynamic_weights[(
                 #     _relative_layer, _expert_idx)]
-                expert_weight = self.expert_weights[_expert_idx]
+                expert_weight = self.expert_weights[_expert_idx][0]
             except:
                 print("layer {} expert {} 无预计算的动态权重".format(
                     _relative_layer, _expert_idx), flush=True)
