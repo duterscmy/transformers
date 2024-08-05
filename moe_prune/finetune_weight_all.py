@@ -159,7 +159,7 @@ for key, value in dynamic_weight_tmp.items():
 
 for layer_idx, layer in enumerate(model.model.layers):
     moe_layer_idx = layer_idx - 1
-    for expert_idx, param in enumerate(layer.mlp.experts_weights):
+    for expert_idx, param in enumerate(layer.mlp.expert_weights):
         static_weight = dynamic_weight_tmp[(moe_layer_idx, expert_idx)]
         param.requires_grad = True
         param.data = torch.tensor(
