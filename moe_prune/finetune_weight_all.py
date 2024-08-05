@@ -50,6 +50,8 @@ parser.add_argument("--prune-num-layer", default=9, type=int,
                     help="剪枝后剩余的layer数量")
 parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
+parser.add_argument("--finetune-route-weight", action="store_true",
+                    help="如果指定，则finetune expert route weight")
 
 args = parser.parse_args()
 
@@ -164,7 +166,10 @@ for layer_idx, layer in enumerate(model.model.layers):
     moe_layer_idx = layer_idx - 1
     for expert_idx, param in enumerate(layer.mlp.expert_weights):
         static_weight = dynamic_weights[(moe_layer_idx, expert_idx)]
-        param.requires_grad = True
+        if args.finetune_route_weight:
+            param.requires_grad = True
+        else:
+            param.requires_grad = False
         param.data = torch.tensor(
             [static_weight], dtype=param.dtype, device=param.device)
 print("load static expert weight")
@@ -229,7 +234,7 @@ training_args = TrainingArguments(
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
-    save_steps=5000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    save_steps=1250,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
     logging_steps=5,                        # 日志记录的步数
