@@ -532,7 +532,7 @@ class DeepseekMoE(nn.Module):
             try:
                 # expert_weight = self.dynamic_weights[(
                 #     _relative_layer, _expert_idx)]
-                expert_weight = self.experts_weights[_expert_idx]
+                expert_weight = self.expert_weights[_expert_idx]
             except:
                 print("layer {} expert {} 无预计算的动态权重".format(
                     _relative_layer, _expert_idx), flush=True)
