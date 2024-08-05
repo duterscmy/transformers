@@ -498,7 +498,7 @@ class DeepseekMoE(nn.Module):
         #     w = value[-1]
         #     dynamic_weights[(layer_idx, expert_idx)] = w
         # self.dynamic_weights = dynamic_weights
-        self.expert_weights = nn.ParameterList([nn.Parameter(torch.randn(1, dtype=torch.float32)) for i in range(64)])
+        self.expert_weights = nn.ParameterList([nn.Parameter(torch.randn(1)) for i in range(64)])
 
     def forward(self, inputs):
         # try:
@@ -520,7 +520,7 @@ class DeepseekMoE(nn.Module):
         #     err_msg = traceback.format_exc()
         #     print(e, err_msg)
         #     output = self.forward_route(inputs)
-        return output.to(torch.float32)
+        return output
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
@@ -537,13 +537,14 @@ class DeepseekMoE(nn.Module):
                 print("layer {} expert {} 无预计算的动态权重".format(
                     _relative_layer, _expert_idx), flush=True)
                 expert_weight = 0.06
-            outputs.append(output*expert_weight.to(torch.float32))
+            print("output dtype {}".format(output.dtype))
+            outputs.append(output*expert_weight)
 
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))
         outputs = torch.stack(outputs, dim=0)
         outputs = torch.sum(outputs, dim=0)
-        return outputs.to(torch.float32)
+        return outputs
 
     def forward_route(self, hidden_states):
         identity = hidden_states
