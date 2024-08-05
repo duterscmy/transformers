@@ -543,7 +543,7 @@ class DeepseekMoE(nn.Module):
             outputs.append(self.shared_experts(identity))
         outputs = torch.stack(outputs, dim=0)
         outputs = torch.sum(outputs, dim=0)
-        return outputs
+        return outputs.to(torch.float32)
 
     def forward_route(self, hidden_states):
         identity = hidden_states
