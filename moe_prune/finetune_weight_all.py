@@ -108,6 +108,7 @@ model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
 )
+print(model)
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 
@@ -158,6 +159,8 @@ for key, value in dynamic_weight_tmp.items():
     dynamic_weights[(layer_idx, expert_idx)] = w
 
 for layer_idx, layer in enumerate(model.model.layers):
+    if layer_idx == 0:
+        continue
     moe_layer_idx = layer_idx - 1
     for expert_idx, param in enumerate(layer.mlp.expert_weights):
         static_weight = dynamic_weight_tmp[(moe_layer_idx, expert_idx)]
