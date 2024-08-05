@@ -508,13 +508,13 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            print("layer_num {} current_layer {}, use PUNE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, use PUNE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_route(inputs)
         # except Exception as e:
         #     err_msg = traceback.format_exc()
@@ -537,7 +537,7 @@ class DeepseekMoE(nn.Module):
                 print("layer {} expert {} 无预计算的动态权重".format(
                     _relative_layer, _expert_idx), flush=True)
                 expert_weight = 0.06
-            print("output dtype {}".format(output.dtype))
+            # print("output dtype {}".format(output.dtype))
             outputs.append(output*expert_weight)
 
         if self.config.n_shared_experts is not None:
@@ -714,7 +714,7 @@ class DeepseekAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
-            print(hidden_states.dtype)
+            # print(hidden_states.dtype)
             query_states = self.q_proj(hidden_states)
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)
