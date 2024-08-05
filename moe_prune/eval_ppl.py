@@ -137,7 +137,10 @@ with open(args.input, 'r') as fp:
         if line:
             question = json.loads(line)
             questions.append(question)
-raw_questions = list(map(lambda x: x["turns"][0], questions))
+try:
+    raw_questions = list(map(lambda x: x["turns"][0], questions))
+except:
+    raw_questions = list(map(lambda x: x["text"], questions))
 
 
 batch_size = args.batch_size
