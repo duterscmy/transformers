@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim import Optimizer
+import torch.function as F 
 from transformers import Trainer, TrainingArguments, EvalPrediction
 from peft import LoraConfig, get_peft_model
 import shutil
@@ -134,8 +135,7 @@ for name, module in model.named_modules():
         # print(name)
         num_prune_module += 1
         for param in module.parameters():
-            param = torch.tensor(
-                [[0.1]], dtype=param.dtype, device="cuda:0")
+            param = F.linear(3，3)
 print("set {} modules to empty".format(num_prune_module))
 
 for param in model.parameters():
