@@ -152,22 +152,6 @@ print(f"{pytorch_checkpoint_path} num_layer {num_layer} num_expert {num_expert}"
 if not os.path.exists(output_path):
     os.makedirs(output_path)
 
-# prune layer idx and expert idx
-if score_mode == "l1":
-    layer_idx_to_expert_idxs = json.load(
-        open("moe_prune/layer_idx_to_expert_idx.json", 'r'))
-    layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-elif score_mode == "ww_alpha":
-    layer_idx_to_expert_idxs = json.load(
-        open("moe_prune/layer_idx_to_expert_idx.alpha.json", 'r'))
-    layer_idx_to_expert_idxs = {int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-elif score_mode == "random":
-    layer_idx_to_expert_idxs = {}
-    for layer_idx in range(num_layer):
-        expert_idxs = list(range(num_expert))
-        random.shuffle(expert_idxs)
-        layer_idx_to_expert_idxs[layer_idx] = expert_idxs
-
 
 # decode and eval ppl
 # no prune
@@ -181,7 +165,7 @@ for key, value in expert_idx_to_info.items():
     ave_w = value[0] / value[1]
     new_expert_idx_to_info[new_key] = [value[0], value[1], ave_w]
 
-output_filename = "dynamic_weight.json"
+output_filename = "dynamic_weight_sample_eval.json"
 json.dump(new_expert_idx_to_info, open(output_filename, 'w'))
 
 
