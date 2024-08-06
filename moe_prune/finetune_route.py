@@ -127,7 +127,7 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     remained_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
     prune_layer_idx_to_expert_idx[prune_layer_idx] = remained_expert_idx_list
 
-    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][prune_num_expert:]
+    prune_expert_idx_list = [idx for idx in range(64) if idx not in remained_expert_idx_list]
     prune_layer_idx_to_prune_expert_idx[prune_layer_idx] = prune_expert_idx_list
 
 print(f"prune layer to remained expert: {prune_layer_idx_to_expert_idx}")
