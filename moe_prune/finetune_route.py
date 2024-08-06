@@ -122,21 +122,26 @@ layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
 
 
 prune_layer_idx_to_expert_idx = {}
+prune_layer_idx_to_prune_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
-    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
-    prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
-print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
+    remained_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
+    prune_layer_idx_to_expert_idx[prune_layer_idx] = remained_expert_idx_list
+
+    prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][prune_num_expert:]
+    prune_layer_idx_to_prune_expert_idx[prune_layer_idx] = prune_expert_idx_list
+
+print(f"prune layer to remained expert: {prune_layer_idx_to_expert_idx}")
+print(f"prune layer to pruned expert: {prune_layer_idx_to_expert_idx}")
 
 
-for name, param in model.named_parameters():
-    if param.device == torch.device('meta'):
-        # 你需要知道正确的形状和类型
-        correct_shape = (1,1)  # 用实际的形状替换
-        correct_dtype = torch.bfloat16  # 用实际的数据类型替换
-        
-        # 创建一个新的tensor并赋值
-        new_param = torch.nn.Parameter(torch.empty(correct_shape, dtype=correct_dtype, device='cuda'))  # 或者'cuda'如果需要在GPU上
-        setattr(model, name, new_param)
+for layer_idx, layer in enumerate(model.model.layers):
+    if layer_idx == 0:
+        continue
+    for expert_idx, expert in enumerate(layer.mlp.experts):
+        if layer_idx in prune_layer_idx_to_prune_expert_idx and expert_idx in prune_layer_idx_to_prune_expert_idx[layer_idx]:
+            expert.gate_proj = F.linear(1,1).to("cuda").to(torch.bfloat16)
+            expert.up_proj = F.linear(1,1).to("cuda").to(torch.bfloat16)
+            expert.down_proj = F.linear(1,1).to("cuda").to(torch.bfloat16)
 
 print_trainable_parameters(model)
 
