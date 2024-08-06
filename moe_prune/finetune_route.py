@@ -133,7 +133,7 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
 print(f"prune layer to remained expert: {prune_layer_idx_to_expert_idx}")
 print(f"prune layer to pruned expert: {prune_layer_idx_to_prune_expert_idx}")
 
-
+# set prune expert to empty
 for layer_idx, layer in enumerate(model.model.layers):
     moe_layer_idx = layer_idx -1
     if layer_idx == 0:
@@ -143,9 +143,9 @@ for layer_idx, layer in enumerate(model.model.layers):
             expert.gate_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
             expert.up_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
             expert.down_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
-
 print_trainable_parameters(model)
 
+# set all para to untrainable
 for param in model.parameters():
     param.requires_grad = False
 print_trainable_parameters(model)
@@ -180,7 +180,6 @@ def tokenize_function(examples):
 # 应用tokenize函数
 tokenized_datasets = dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
-
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
