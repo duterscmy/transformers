@@ -532,7 +532,7 @@ class DeepseekMoE(nn.Module):
                 # expert_weight = self.dynamic_weights[(
                 #     _relative_layer, _expert_idx)]
             expert_weight = self.expert_weights[_expert_idx]
-                
+            print("layer {} expert {} weight {}".format(_relative_layer, _expert_idx, expert_weight))
             # print("output dtype {}".format(output.dtype))
             outputs.append(output*expert_weight)
 
