@@ -135,8 +135,8 @@ for name, param in model.named_parameters():
         correct_dtype = torch.bfloat16  # 用实际的数据类型替换
         
         # 创建一个新的tensor并赋值
-        new_param = torch.empty(correct_shape, dtype=correct_dtype, device='cuda')  # 或者'cuda'如果需要在GPU上
-        param.data = new_param
+        new_param = torch.nn.Parameter(torch.empty(correct_shape, dtype=correct_dtype, device='cuda'))  # 或者'cuda'如果需要在GPU上
+        setattr(model, name, new_param)
 
 print_trainable_parameters(model)
 
