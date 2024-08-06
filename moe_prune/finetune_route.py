@@ -128,18 +128,16 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
 print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 
-num_prune_module = 0
-for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and \
-        classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-        # print(name)
-        num_prune_module += 1
-        for param in module.parameters():
-            param.requires_grad = False
-            param.data = torch.tensor(
-                [[0.1]], dtype=param.dtype, device="cuda")
+for name, param in model.named_parameters():
+    if param.device == torch.device('meta'):
+        # 你需要知道正确的形状和类型
+        correct_shape = (1,1)  # 用实际的形状替换
+        correct_dtype = torch.bfloat16  # 用实际的数据类型替换
+        
+        # 创建一个新的tensor并赋值
+        new_param = torch.empty(correct_shape, dtype=correct_dtype, device='cuda')  # 或者'cuda'如果需要在GPU上
+        param.data = new_param
 
-print("set {} modules to empty".format(num_prune_module))
 print_trainable_parameters(model)
 
 for param in model.parameters():
