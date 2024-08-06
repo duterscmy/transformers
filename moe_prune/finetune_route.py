@@ -135,10 +135,11 @@ print(f"prune layer to pruned expert: {prune_layer_idx_to_prune_expert_idx}")
 
 
 for layer_idx, layer in enumerate(model.model.layers):
+    moe_layer_idx = layer_idx -1
     if layer_idx == 0:
         continue
     for expert_idx, expert in enumerate(layer.mlp.experts):
-        if layer_idx in prune_layer_idx_to_prune_expert_idx and expert_idx in prune_layer_idx_to_prune_expert_idx[layer_idx]:
+        if moe_layer_idx in prune_layer_idx_to_prune_expert_idx and expert_idx in prune_layer_idx_to_prune_expert_idx[moe_layer_idx]:
             expert.gate_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
             expert.up_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
             expert.down_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
