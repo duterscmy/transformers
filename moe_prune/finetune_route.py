@@ -139,9 +139,9 @@ for layer_idx, layer in enumerate(model.model.layers):
         continue
     for expert_idx, expert in enumerate(layer.mlp.experts):
         if layer_idx in prune_layer_idx_to_prune_expert_idx and expert_idx in prune_layer_idx_to_prune_expert_idx[layer_idx]:
-            expert.gate_proj = F.linear(1,1).to("cuda").to(torch.bfloat16)
-            expert.up_proj = F.linear(1,1).to("cuda").to(torch.bfloat16)
-            expert.down_proj = F.linear(1,1).to("cuda").to(torch.bfloat16)
+            expert.gate_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
+            expert.up_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
+            expert.down_proj = torch.nn.Linear(1,1).to("cuda").to(torch.bfloat16)
 
 print_trainable_parameters(model)
 
