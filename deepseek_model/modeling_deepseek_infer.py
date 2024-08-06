@@ -508,13 +508,13 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            # print("layer_num {} current_layer {}, use PUNE layer".format(
-            #     self.layer_num, relative_layer))
+            print("layer_num {} current_layer {}, use PUNE layer".format(
+                self.layer_num, relative_layer), flush=True)
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            # print("layer_num {} current_layer {}, use ROUTE layer".format(
-            #     self.layer_num, relative_layer))
+            print("layer_num {} current_layer {}, use ROUTE layer".format(
+                self.layer_num, relative_layer), flush=True)
             output = self.forward_route(inputs)
         # except Exception as e:
         #     err_msg = traceback.format_exc()
@@ -532,7 +532,7 @@ class DeepseekMoE(nn.Module):
                 # expert_weight = self.dynamic_weights[(
                 #     _relative_layer, _expert_idx)]
             expert_weight = self.expert_weights[_expert_idx]
-            print("layer {} expert {} weight {}".format(_relative_layer, _expert_idx, expert_weight))
+            print("layer {} expert {} weight {}".format(_relative_layer, _expert_idx, expert_weight), flush=True)
             # print("output dtype {}".format(output.dtype))
             outputs.append(output*expert_weight)
 
