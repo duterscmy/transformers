@@ -131,7 +131,7 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
     prune_layer_idx_to_prune_expert_idx[prune_layer_idx] = prune_expert_idx_list
 
 print(f"prune layer to remained expert: {prune_layer_idx_to_expert_idx}")
-print(f"prune layer to pruned expert: {prune_layer_idx_to_expert_idx}")
+print(f"prune layer to pruned expert: {prune_layer_idx_to_prune_expert_idx}")
 
 
 for layer_idx, layer in enumerate(model.model.layers):
