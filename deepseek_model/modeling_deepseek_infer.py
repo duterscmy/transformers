@@ -520,7 +520,7 @@ class DeepseekMoE(nn.Module):
         #     err_msg = traceback.format_exc()
         #     print(e, err_msg)
         #     output = self.forward_route(inputs)
-        return output.to(torch.float32)
+        return output.to
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
@@ -534,7 +534,7 @@ class DeepseekMoE(nn.Module):
             expert_weight = self.expert_weights[_expert_idx]
             print("layer {} expert {} weight {} grad {}".format(_relative_layer, _expert_idx, expert_weight, expert_weight.grad), flush=True)
             # print("output dtype {}".format(output.dtype))
-            outputs.append(output*expert_weight)
+            outputs.append(output*expert_weight.to(torch.float32))
 
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))
@@ -710,7 +710,7 @@ class DeepseekAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
-            # print(hidden_states.dtype)
+            print(hidden_states.dtype)
             query_states = self.q_proj(hidden_states)
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)
