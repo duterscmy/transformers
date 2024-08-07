@@ -520,7 +520,7 @@ class DeepseekMoE(nn.Module):
         #     err_msg = traceback.format_exc()
         #     print(e, err_msg)
         #     output = self.forward_route(inputs)
-        return output
+        return output.to(torch.float32)
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
@@ -540,7 +540,7 @@ class DeepseekMoE(nn.Module):
             outputs.append(self.shared_experts(identity))
         outputs = torch.stack(outputs, dim=0)
         outputs = torch.sum(outputs, dim=0)
-        return outputs.to(torch.float32)
+        return outputs
 
     def forward_route(self, hidden_states):
         identity = hidden_states
