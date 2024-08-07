@@ -533,7 +533,10 @@ class DeepseekMoE(nn.Module):
                 #     _relative_layer, _expert_idx)]
             expert_weight = self.expert_weights[_expert_idx]
             print("layer {} expert {} weight {} grad {}".format(_relative_layer, _expert_idx, expert_weight, expert_weight.grad), flush=True)
-            # print("output dtype {}".format(output.dtype))
+            print("output {}".format(output.size()))
+            print("expert weight {}".format(expert_weight))
+            weight_output = output*expert_weight
+            print("weight output {}".format(weight_output.size()))
             outputs.append(output*expert_weight)
 
         if self.config.n_shared_experts is not None:
