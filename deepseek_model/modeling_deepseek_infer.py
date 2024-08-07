@@ -532,12 +532,12 @@ class DeepseekMoE(nn.Module):
                 # expert_weight = self.dynamic_weights[(
                 #     _relative_layer, _expert_idx)]
             expert_weight = self.expert_weights[_expert_idx]
-            print("layer {} expert {} weight {} grad {}".format(_relative_layer, _expert_idx, expert_weight, expert_weight.grad), flush=True)
-            print("output {}".format(output.size()))
-            print("expert weight {}".format(expert_weight))
+            # print("layer {} expert {} weight {} grad {}".format(_relative_layer, _expert_idx, expert_weight, expert_weight.grad), flush=True)
+            # print("output {}".format(output.size()))
+            # print("expert weight {}".format(expert_weight))
             weight_output = output*expert_weight
-            print("weight output {}".format(weight_output.size()))
-            outputs.append(output*expert_weight)
+            # print("weight output {}".format(weight_output.size()))
+            outputs.append(weight_output)
 
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))
@@ -713,7 +713,7 @@ class DeepseekAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
-            print(hidden_states.dtype)
+            # print(hidden_states.dtype)
             query_states = self.q_proj(hidden_states)
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)
