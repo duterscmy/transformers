@@ -238,9 +238,6 @@ num_training_steps = len(
 min_lr = 5e-6
 
 # Create the optimizer
-for name, param in model.named_parameters():
-    print(f"Name: {name}, Shape: {param.shape}, Device: {param.device}, Requires_grad: {param.requires_grad}")
-exit()
 optimizer = torch.optim.AdamW(
     model.parameters(), lr=training_args.learning_rate)
 
