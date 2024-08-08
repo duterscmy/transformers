@@ -454,7 +454,7 @@ class DeepseekMoE(nn.Module):
         elif self.score_mode == "greedy_jl":
             self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
             # self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 7, 17, 1, 24, 9, 18, 5]  # drop bad ppl layer
-        elif self.score_mode == "block_trimmming":
+        elif self.score_mode == "block_trimming":
             self.prune_layer_order = [22,23,21,20,19,18,24,15,16,17,14,13,12,11,8]
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
