@@ -479,13 +479,13 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            print("layer_num {} current_layer {}, CONDENSE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, CONDENSE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, ROUTE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, ROUTE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_route(inputs)
 
         return output
@@ -701,7 +701,7 @@ class DeepseekAttention(nn.Module):
             query_states, key_states, cos, sin, position_ids)
 
         if past_key_value is not None:
-            print(self.layer_idx)
+            # print(self.layer_idx)
             cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
             cache_idx = layer_map_trim[self.layer_idx-1] + 1 if self.layer_idx > 0 else 0
             key_states, value_states = past_key_value.update(
@@ -1404,8 +1404,8 @@ class DeepseekModel(DeepseekPreTrainedModel):
                 global global_layer
                 relative_layer = global_layer % self.layer_num
                 if relative_layer in self.trim_layer_idxs:
-                    print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
-                        self.layer_num, relative_layer))
+                    # print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
+                    #     self.layer_num, relative_layer))
                     global_layer +=1
                     continue
                 
