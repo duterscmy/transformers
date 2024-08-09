@@ -407,13 +407,13 @@ layer_trim_layer_order = [22, 23, 21, 20,
 #                                 19, 18, 16, 15, 24, 17, 14 ,12 ,13, 11, 0]
 # 确定剪枝的层
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
-# layer_map_trim = {}
-# new_layer_idx = 0
-# for origin_layer_idx in range(27):
-#     if origin_layer_idx in trim_layer_idxs:
-#         continue
-#     layer_map_trim[origin_layer_idx] = new_layer_idx
-#     new_layer_idx += 1
+layer_map_trim = {}
+new_layer_idx = 0
+for origin_layer_idx in range(27):
+    if origin_layer_idx in trim_layer_idxs:
+        continue
+    layer_map_trim[origin_layer_idx] = new_layer_idx
+    new_layer_idx += 1
 condense_layer_order = list(filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
 prune_layer_idxs = condense_layer_order[:condense_layer_num]
 
@@ -703,8 +703,9 @@ class DeepseekAttention(nn.Module):
         if past_key_value is not None:
             print(self.layer_idx)
             cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
+            cache_idx = layer_map_trim[self.layer_idx-1] + 1 if self.layer_idx > 0 else 0
             key_states, value_states = past_key_value.update(
-                key_states, value_states, self.layer_idx, cache_kwargs)
+                key_states, value_states, cache_idx, cache_kwargs)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
