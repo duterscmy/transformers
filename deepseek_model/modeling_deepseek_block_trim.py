@@ -1118,7 +1118,7 @@ class DeepseekDecoderLayer(nn.Module):
             # print("layer_num {} current_layer {}, LAYER TRIM layer".format(
             #     self.layer_num, relative_layer))
             global_layer += 1
-            return hidden_states
+            return (hidden_states, )
 
         residual = hidden_states
 
