@@ -393,9 +393,11 @@ class AddAuxiliaryLoss(torch.autograd.Function):
 
 layer_num = 27
 num_route_experts = 0
-prune_layer_num = 12
-trim_layer_num = 4
+prune_layer_num = 9
+trim_layer_num = 3
+
 condense_layer_num = prune_layer_num - trim_layer_num
+# layer_num -= trim_layer_num
 
 condense_layer_order = [19, 15, 22, 10,
                                 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
@@ -405,12 +407,22 @@ layer_trim_layer_order = [22, 23, 21, 20,
 #                                 19, 18, 16, 15, 24, 17, 14 ,12 ,13, 11, 0]
 # 确定剪枝的层
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
-
+# layer_map_trim = {}
+# new_layer_idx = 0
+# for origin_layer_idx in range(27):
+#     if origin_layer_idx in trim_layer_idxs:
+#         continue
+#     layer_map_trim[origin_layer_idx] = new_layer_idx
+#     new_layer_idx += 1
 condense_layer_order = list(filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
 prune_layer_idxs = condense_layer_order[:condense_layer_num]
 
 print("trim layer idx {}".format(trim_layer_idxs))
 print("condense layer idx {}".format(prune_layer_idxs))
+# print("layer idx map after trimming{}".format(layer_map_trim))
+
+# prune_layer_idxs = list(map(lambda x: layer_map_trim[x], prune_layer_idxs))
+# print("condense layer idx after mapping {}".format(prune_layer_idxs))
 
 # 层索引 to 专家索引序列
 current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
@@ -467,13 +479,13 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            # print("layer_num {} current_layer {}, CONDENSE layer".format(
-            #     self.layer_num, relative_layer))
+            print("layer_num {} current_layer {}, CONDENSE layer".format(
+                self.layer_num, relative_layer))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            # print("layer_num {} current_layer {}, ROUTE layer".format(
-            #     self.layer_num, relative_layer))
+            print("layer_num {} current_layer {}, ROUTE layer".format(
+                self.layer_num, relative_layer))
             output = self.forward_route(inputs)
 
         return output
@@ -1079,9 +1091,6 @@ class DeepseekDecoderLayer(nn.Module):
         self.post_attention_layernorm = DeepseekRMSNorm(
             config.hidden_size, eps=config.rms_norm_eps)
         
-        global layer_num, trim_layer_idxs
-        self.layer_num = layer_num
-        self.trim_layer_idxs = trim_layer_idxs
 
     def forward(
         self,
@@ -1111,14 +1120,6 @@ class DeepseekDecoderLayer(nn.Module):
             warnings.warn(
                 "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
             )
-
-        global global_layer
-        relative_layer = global_layer % self.layer_num
-        if relative_layer in self.trim_layer_idxs:
-            # print("layer_num {} current_layer {}, LAYER TRIM layer".format(
-            #     self.layer_num, relative_layer))
-            global_layer += 1
-            return (hidden_states, )
 
         residual = hidden_states
 
@@ -1295,6 +1296,12 @@ class DeepseekModel(DeepseekPreTrainedModel):
 
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
+
+        global layer_num, trim_layer_idxs
+        self.layer_num = layer_num
+        self.trim_layer_idxs = trim_layer_idxs
+        # self.trim_layer_idxs = [i+1 for i in trim_layer_idxs]  # add first ffn layer
+
         self.post_init()
 
     def get_input_embeddings(self):
@@ -1390,7 +1397,16 @@ class DeepseekModel(DeepseekPreTrainedModel):
         all_self_attns = () if output_attentions else None
         next_decoder_cache = None
 
-        for decoder_layer in self.layers:
+        for tmp_layer_idx, decoder_layer in enumerate(self.layers):
+            if tmp_layer_idx > 0:
+                global global_layer
+                relative_layer = global_layer % self.layer_num
+                if relative_layer in self.trim_layers:
+                    print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
+                        self.layer_num, relative_layer))
+                    global_layer +=1
+                    continue
+                
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
