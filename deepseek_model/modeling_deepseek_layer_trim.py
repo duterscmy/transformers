@@ -406,8 +406,8 @@ layer_trim_layer_order = [23, 22, 20, 21,
 # 确定剪枝的层
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
 
-condense_layer_order = list(map(lambda x: x not in trim_layer_idxs, condense_layer_order))
-prune_layer_idxs = layer_trim_layer_order[:condense_layer_num]
+condense_layer_order = list(filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
+prune_layer_idxs = condense_layer_order[:condense_layer_num]
 
 print("trim layer idx {}".format(trim_layer_idxs))
 print("condense layer idx {}".format(prune_layer_idxs))
@@ -452,11 +452,12 @@ class DeepseekMoE(nn.Module):
             self.shared_experts = DeepseekMLP(
                 config=config, intermediate_size=intermediate_size)
 
-        global layer_num, prune_layer_idxs, layer_idx_to_expert_idxs, dynamic_weights
+        global layer_num, prune_layer_idxs, layer_idx_to_expert_idxs, dynamic_weights, num_route_experts
         self.layer_num = layer_num
         self.prune_layer_idxs = prune_layer_idxs
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
         self.dynamic_weights = dynamic_weights
+        self.num_route_experts
 
     def forward(self, inputs):
         # try:
