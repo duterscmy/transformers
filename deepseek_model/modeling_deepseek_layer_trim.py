@@ -457,7 +457,7 @@ class DeepseekMoE(nn.Module):
         self.prune_layer_idxs = prune_layer_idxs
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
         self.dynamic_weights = dynamic_weights
-        self.num_route_experts
+        self.num_route_experts = num_route_experts
 
     def forward(self, inputs):
         # try:
@@ -467,13 +467,13 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            print("layer_num {} current_layer {}, CONDENSE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, CONDENSE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, ROUTE layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, ROUTE layer".format(
+            #     self.layer_num, relative_layer))
             output = self.forward_route(inputs)
 
         return output
@@ -1130,8 +1130,9 @@ class DeepseekDecoderLayer(nn.Module):
         global global_layer
         relative_layer = global_layer % self.layer_num
         if relative_layer in self.trim_layer_idxs:
-            print("layer_num {} current_layer {}, LAYER TRIM layer".format(
-                self.layer_num, relative_layer))
+            # print("layer_num {} current_layer {}, LAYER TRIM layer".format(
+            #     self.layer_num, relative_layer))
+            global_layer += 1
         else:
             # Fully Connected
             residual = hidden_states
