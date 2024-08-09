@@ -1401,7 +1401,7 @@ class DeepseekModel(DeepseekPreTrainedModel):
             if tmp_layer_idx > 0:
                 global global_layer
                 relative_layer = global_layer % self.layer_num
-                if relative_layer in self.trim_layers:
+                if relative_layer in self.trim_layer_idxs:
                     print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
                         self.layer_num, relative_layer))
                     global_layer +=1
