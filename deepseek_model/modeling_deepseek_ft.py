@@ -413,7 +413,7 @@ class DeepseekMoE(nn.Module):
 
         self.layer_num = 27
         self.num_route_experts = 6
-        self.prune_layer_num = 12
+        self.prune_layer_num = 9
 
         # self.score_mode = "random"
         self.score_mode = "greedy_jl"
@@ -454,7 +454,7 @@ class DeepseekMoE(nn.Module):
         elif self.score_mode == "greedy_jl":
             self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
             # self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 7, 17, 1, 24, 9, 18, 5]  # drop bad ppl layer
-        elif self.score_mode == "block_trimming":
+        elif self.score_mode == "block_trimmming":
             self.prune_layer_order = [22,23,21,20,19,18,24,15,16,17,14,13,12,11,8]
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
@@ -489,16 +489,17 @@ class DeepseekMoE(nn.Module):
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
 
         # 专家的动态权重
-        dynamic_weights = {}
-        dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
-        dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
-        for key, value in dynamic_weight_tmp.items():
-            key = key.split("-")
-            layer_idx = int(key[0])
-            expert_idx = int(key[1])
-            w = value[-1]
-            dynamic_weights[(layer_idx, expert_idx)] = w
-        self.dynamic_weights = dynamic_weights
+        # dynamic_weights = {}
+        # dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
+        # dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
+        # for key, value in dynamic_weight_tmp.items():
+        #     key = key.split("-")
+        #     layer_idx = int(key[0])
+        #     expert_idx = int(key[1])
+        #     w = value[-1]
+        #     dynamic_weights[(layer_idx, expert_idx)] = w
+        # self.dynamic_weights = dynamic_weights
+        self.expert_weights = nn.ParameterList([nn.Parameter(torch.randn(1)) for i in range(64)])
 
     def forward(self, inputs):
         # try:
@@ -509,12 +510,12 @@ class DeepseekMoE(nn.Module):
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
             # print("layer_num {} current_layer {}, use PUNE layer".format(
-            #     self.layer_num, relative_layer))
+            #     self.layer_num, relative_layer), flush=True)
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
             # print("layer_num {} current_layer {}, use ROUTE layer".format(
-            #     self.layer_num, relative_layer))
+            #     self.layer_num, relative_layer), flush=True)
             output = self.forward_route(inputs)
         # except Exception as e:
         #     err_msg = traceback.format_exc()
@@ -529,18 +530,15 @@ class DeepseekMoE(nn.Module):
             # print("layer idx {}, expert idx {}".format(_relative_layer, _expert_idx))
             # print(self.experts[_expert_idx].gate_proj.data.size())
             output = self.experts[_expert_idx](identity)
-            try:
-                expert_weight = self.dynamic_weights[(
-                    _relative_layer, _expert_idx)]
-            except:
-                print("layer {} expert {} 无预计算的动态权重".format(
-                    _relative_layer, _expert_idx))
-                # print(self.dynamic_weights.keys())
-                # print(self.dynamic_weights[_relative_layer].keys())
-                # exit()
-                # print("no expert weight，using 0.06")
-                expert_weight = 0.06
-            outputs.append(output*expert_weight)
+                # expert_weight = self.dynamic_weights[(
+                #     _relative_layer, _expert_idx)]
+            expert_weight = self.expert_weights[_expert_idx]
+            # print("layer {} expert {} weight {} grad {}".format(_relative_layer, _expert_idx, expert_weight, expert_weight.grad), flush=True)
+            # print("output {}".format(output.size()))
+            # print("expert weight {}".format(expert_weight))
+            weight_output = output*expert_weight
+            # print("weight output {}".format(weight_output.size()))
+            outputs.append(weight_output)
 
         if self.config.n_shared_experts is not None:
             outputs.append(self.shared_experts(identity))
@@ -716,6 +714,7 @@ class DeepseekAttention(nn.Module):
             value_states = torch.cat(value_states, dim=-1)
 
         else:
+            # print(hidden_states.dtype)
             query_states = self.q_proj(hidden_states)
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)

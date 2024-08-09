@@ -391,6 +391,47 @@ class AddAuxiliaryLoss(torch.autograd.Function):
         return grad_output, grad_loss
 
 
+layer_num = 27
+num_route_experts = 0
+prune_layer_num = 12
+trim_layer_num = 4
+condense_layer_num = prune_layer_num - trim_layer_num
+
+condense_layer_order = [19, 15, 22, 10,
+                                12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+#block_trimming_prune_layer_order = [22, 23, 21, 20,
+#                              19, 18, 24, 15, 16, 17, 14, 13, 12, 11, 8]
+layer_trim_layer_order = [23, 22, 20, 21, 
+                                19, 18, 16, 15, 24, 17, 14 ,12 ,13, 11, 0]
+# 确定剪枝的层
+trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
+
+condense_layer_order = list(map(lambda x: x not in trim_layer_idxs, condense_layer_order))
+prune_layer_idxs = layer_trim_layer_order[:condense_layer_num]
+
+print("trim layer idx {}".format(trim_layer_idxs))
+print("condense layer idx {}".format(prune_layer_idxs))
+
+# 层索引 to 专家索引序列
+current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
+expert_order_path = os.path.join(
+    current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
+layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+layer_idx_to_expert_idxs = {
+    int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+
+# 专家的动态权重
+dynamic_weights = {}
+dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
+dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
+for key, value in dynamic_weight_tmp.items():
+    key = key.split("-")
+    layer_idx = int(key[0])
+    expert_idx = int(key[1])
+    w = value[-1]
+    dynamic_weights[(layer_idx, expert_idx)] = w
+dynamic_weights = dynamic_weights
+
 global_layer = 0  # 整个推理脚本中调用layer对象的次数
 
 
@@ -411,93 +452,10 @@ class DeepseekMoE(nn.Module):
             self.shared_experts = DeepseekMLP(
                 config=config, intermediate_size=intermediate_size)
 
-        self.layer_num = 27
-        self.num_route_experts = 6
-        self.prune_layer_num = 12
-
-        # self.score_mode = "random"
-        self.score_mode = "greedy_jl"
-        # 剪枝层的顺序，根据单层剪枝ppl从小到大
-        if self.num_route_experts == 0:
-            self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
-                                      15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
-            self.prune_layer_order = [10, 17, 22, 1, 12,
-                                      21, 6, 15, 7, 19, 24, 9]  # greedy search ppl
-            self.prune_layer_order = [19, 12, 7, 23, 10, 14, 1, 24, 17, 15, 9, 21, 18, 6, 26] # greedy search jl
-        elif self.num_route_experts == 6 and self.score_mode == "random":
-            self.prune_layer_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
-                                      24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
-            self.prune_layer_order = [10, 17, 22, 1, 9,
-                                      6, 21, 15, 12, 14, 19, 7]  # greedy search
-        elif self.num_route_experts == 6 and self.score_mode == "l1":
-            self.prune_layer_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
-                                      2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
-            self.prune_layer_order = [4, 17, 21, 10, 22,
-                                      12, 7, 15, 9, 19, 6, 18]  # greedy search
-        elif self.score_mode == "distribute":
-            self.prune_layer_order = [15, 10, 7, 18, 8, 2, 22, 16, 23, 11,
-                                      20, 24, 13, 6, 19, 25, 4, 3, 5, 1, 27, 9, 21, 17, 12, 26, 14]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
-            self.prune_layer_order = [14, 9, 1, 21, 22,
-                                      6, 17, 10, 12, 7, 15, 24]  # greedy search
-        elif self.score_mode == "greedy_jl":
-            self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
-            # self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 7, 17, 1, 24, 9, 18, 5]  # drop bad ppl layer
-        elif self.score_mode == "block_trimming":
-            self.prune_layer_order = [22,23,21,20,19,18,24,15,16,17,14,13,12,11,8]
-        # 确定剪枝的层
-        self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
-
-        # 层索引 to 专家索引序列
-        # current_dir = os.path.dirname(__file__)
-        current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
-        if self.score_mode == "l1":
-            expert_order_path = os.path.join(
-                current_dir, "layer_idx_to_expert_idx.json")
-            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
-            layer_idx_to_expert_idxs = {
-                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-        elif self.score_mode == "distribute":
-            expert_order_path = os.path.join(
-                current_dir, "layer_idx_to_expert_idx.distribution.json")
-            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
-            layer_idx_to_expert_idxs = {
-                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-        elif self.score_mode == "random":
-            expert_order_path = os.path.join(
-                current_dir, "layer_idx_to_expert_idx.random.json")
-            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
-            layer_idx_to_expert_idxs = {
-                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-        elif self.score_mode == "greedy_jl" or self.score_mode == "block_trimming":
-            expert_order_path = os.path.join(
-                current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
-            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
-            layer_idx_to_expert_idxs = {
-                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+        global layer_num, prune_layer_idxs, layer_idx_to_expert_idxs, dynamic_weights
+        self.layer_num = layer_num
+        self.prune_layer_idxs = prune_layer_idxs
         self.layer_idx_to_expert_idxs = layer_idx_to_expert_idxs
-
-        # 专家的动态权重
-        dynamic_weights = {}
-        dynamic_weights_path = os.path.join(current_dir, "dynamic_weight.json")
-        dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
-        for key, value in dynamic_weight_tmp.items():
-            key = key.split("-")
-            layer_idx = int(key[0])
-            expert_idx = int(key[1])
-            w = value[-1]
-            dynamic_weights[(layer_idx, expert_idx)] = w
         self.dynamic_weights = dynamic_weights
 
     def forward(self, inputs):
@@ -508,18 +466,15 @@ class DeepseekMoE(nn.Module):
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
             prune_expert_idxs = prune_expert_idxs[:self.num_route_experts]
-            # print("layer_num {} current_layer {}, use PUNE layer".format(
-            #     self.layer_num, relative_layer))
+            print("layer_num {} current_layer {}, CONDENSE layer".format(
+                self.layer_num, relative_layer))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            # print("layer_num {} current_layer {}, use ROUTE layer".format(
-            #     self.layer_num, relative_layer))
+            print("layer_num {} current_layer {}, ROUTE layer".format(
+                self.layer_num, relative_layer))
             output = self.forward_route(inputs)
-        # except Exception as e:
-        #     err_msg = traceback.format_exc()
-        #     print(e, err_msg)
-        #     output = self.forward_route(inputs)
+
         return output
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
@@ -529,17 +484,8 @@ class DeepseekMoE(nn.Module):
             # print("layer idx {}, expert idx {}".format(_relative_layer, _expert_idx))
             # print(self.experts[_expert_idx].gate_proj.data.size())
             output = self.experts[_expert_idx](identity)
-            try:
-                expert_weight = self.dynamic_weights[(
-                    _relative_layer, _expert_idx)]
-            except:
-                print("layer {} expert {} 无预计算的动态权重".format(
-                    _relative_layer, _expert_idx))
-                # print(self.dynamic_weights.keys())
-                # print(self.dynamic_weights[_relative_layer].keys())
-                # exit()
-                # print("no expert weight，using 0.06")
-                expert_weight = 0.06
+            expert_weight = self.dynamic_weights[(
+                _relative_layer, _expert_idx)]
             outputs.append(output*expert_weight)
 
         if self.config.n_shared_experts is not None:
@@ -1131,6 +1077,10 @@ class DeepseekDecoderLayer(nn.Module):
             config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = DeepseekRMSNorm(
             config.hidden_size, eps=config.rms_norm_eps)
+        
+        global layer_num, trim_layer_idxs
+        self.layer_num = layer_num
+        self.trim_layer_idxs = trim_layer_idxs
 
     def forward(
         self,
@@ -1176,11 +1126,17 @@ class DeepseekDecoderLayer(nn.Module):
         )
         hidden_states = residual + hidden_states
 
-        # Fully Connected
-        residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states)
-        hidden_states = self.mlp(hidden_states)
-        hidden_states = residual + hidden_states
+        global global_layer
+        relative_layer = global_layer % self.layer_num
+        if relative_layer in self.trim_layer_idxs:
+            print("layer_num {} current_layer {}, LAYER TRIM layer".format(
+                self.layer_num, relative_layer))
+        else:
+            # Fully Connected
+            residual = hidden_states
+            hidden_states = self.post_attention_layernorm(hidden_states)
+            hidden_states = self.mlp(hidden_states)
+            hidden_states = residual + hidden_states
 
         outputs = (hidden_states,)
 
