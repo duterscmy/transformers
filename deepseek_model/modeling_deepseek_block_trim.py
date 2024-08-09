@@ -701,6 +701,7 @@ class DeepseekAttention(nn.Module):
             query_states, key_states, cos, sin, position_ids)
 
         if past_key_value is not None:
+            print(self.layer_idx)
             cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
             key_states, value_states = past_key_value.update(
                 key_states, value_states, self.layer_idx, cache_kwargs)
