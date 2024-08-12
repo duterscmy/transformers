@@ -52,8 +52,21 @@ print(
 print_trainable_parameters(model)
 
 
+# set unused parameters to empty
 import torch.nn as nn
-model.model.layers = nn.ModuleList(model.model.layers[:-prune_num_layer])
+
+layer_trim_layer_order = [23, 22, 20, 21, 
+                                19, 18, 16, 15, 24, 17, 14 ,12 ,13, 11, 0]
+# 确定剪枝的层
+trim_layer_idxs = layer_trim_layer_order[:args.prune_num_layer]
+for layer_idx in trim_layer_idxs:
+    layer = model.model.layers[layer_idx+1]
+    for name, module in layer.named_modules():
+        if isinstance(module, (torch.nn.Linear)) and "self_attn" in name:
+            print(name)
+            for param in module.parameters():
+                param.data = torch.tensor(
+                    [[0.1]], dtype=param.dtype, device=param.device)
 
 torch.cuda.empty_cache()
 
