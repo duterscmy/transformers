@@ -62,7 +62,7 @@ trim_layer_idxs = layer_trim_layer_order[:args.prune_num_layer]
 for layer_idx in trim_layer_idxs:
     layer = model.model.layers[layer_idx+1]
     for name, module in layer.named_modules():
-        if isinstance(module, (torch.nn.Linear)) and "self_attn" in name:
+        if isinstance(module, (torch.nn.Linear)) and not "self_attn" in name:
             print(name)
             for param in module.parameters():
                 param.data = torch.tensor(
