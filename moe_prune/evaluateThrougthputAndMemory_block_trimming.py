@@ -53,7 +53,18 @@ print_trainable_parameters(model)
 
 
 import torch.nn as nn
-model.model.layers = nn.ModuleList(model.model.layers[:-prune_num_layer])
+
+block_trim_layer_order = [22, 23, 21, 20,
+                             19, 18, 24, 15, 16, 17, 14, 13, 12, 11, 8]
+# 确定剪枝的层
+trim_layer_idxs = block_trim_layer_order[:args.prune_num_layer]
+for layer_idx in trim_layer_idxs:
+    layer = model.model.layers[layer_idx+1]
+    for name, module in layer.named_modules():
+        if isinstance(module, (torch.nn.Linear)):
+            for param in module.parameters():
+                param.data = torch.tensor(
+                    [[0.1]], dtype=param.dtype, device=param.device)
 
 torch.cuda.empty_cache()
 
