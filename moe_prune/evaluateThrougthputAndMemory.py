@@ -72,6 +72,7 @@ print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
+        print("prune {}".format(name))
         for param in module.parameters():
             param.requires_grad = False
             param.data = torch.tensor(
