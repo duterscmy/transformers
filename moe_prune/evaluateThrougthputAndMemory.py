@@ -29,7 +29,7 @@ parser.add_argument('--batch_size', type=int, default=1,
 parser.add_argument('--num_repeats', type=int, default=500,
                     help="Number of times to repeat the inference for averaging")
 
-parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
+parser.add_argument("--score-mode", type=str, default="greedy_jl", help="层间对专家排序的指标")
 parser.add_argument("--prune-num-expert", default=6, type=int,
                     help="剪枝后剩余的expert数量")
 parser.add_argument("--prune-num-layer", default=9, type=int,
