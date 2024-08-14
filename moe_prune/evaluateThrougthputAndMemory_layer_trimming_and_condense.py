@@ -70,18 +70,20 @@ import torch.nn as nn
 
 layer_trim_layer_order = [23, 22, 20, 21, 
                                 19, 18, 16, 15, 24, 17, 14 ,12 ,13, 11, 0]
-# 确定剪枝的层
+# trim layer
 trim_layer_idxs = layer_trim_layer_order[:args.trim_num_layer]
 for layer_idx in trim_layer_idxs:
     layer = model.model.layers[layer_idx+1]
+    print("trim layer {}".format(layer_idx +1))
     for name, module in layer.named_modules():
         if isinstance(module, (torch.nn.Linear)) and not "self_attn" in name:
-            print(name)
+            # print(name)
             for param in module.parameters():
                 param.data = torch.tensor(
                     [[0.1]], dtype=param.dtype, device=param.device)
                 
 # prune layer idx and expert idx
+print("prune num expert: {}, score mode {}".format(prune_num_expert, score_mode))
 layer_idx_to_expert_idxs = get_layer_idx_to_expert_idx(score_mode)
 layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
 
@@ -93,7 +95,7 @@ print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-        print("prune {}".format(name))
+        print("condense {}".format(name))
         for param in module.parameters():
             param.requires_grad = False
             param.data = torch.tensor(
