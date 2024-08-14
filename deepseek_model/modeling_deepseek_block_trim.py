@@ -399,8 +399,13 @@ trim_layer_num = 3
 condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
 
-condense_layer_order = [19, 15, 22, 10,
-                                12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+if num_route_experts == 6:
+    condense_layer_order = [19, 15, 22, 10,
+                                    12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+elif num_route_experts == 0:
+    condense_layer_order = [19, 12, 7, 23, 10, 14,
+                                    1, 24, 17, 15, 9, 21, 18, 6, 26]
+
 layer_trim_layer_order = [22, 23, 21, 20,
                              19, 18, 24, 15, 16, 17, 14, 13, 12, 11, 8]
 # layer_trim_layer_order = [23, 22, 20, 21, 
