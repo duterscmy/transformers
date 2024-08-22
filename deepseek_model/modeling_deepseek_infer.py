@@ -524,16 +524,17 @@ class DeepseekMoE(nn.Module):
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
-
-        outputs = self.shared_experts(identity)
         if len(_prune_expert_idxs) == 6:
+        
             expert_weights = [self.dynamic_weights[(_relative_layer, _expert_idx)] for _expert_idx in _prune_expert_idxs]
-            outputs = outputs + expert_weights[0] * self.experts[_prune_expert_idxs[0]](identity) + \
+            outputs =    self.shared_experts(identity) + expert_weights[0] * self.experts[_prune_expert_idxs[0]](identity) + \
                         expert_weights[1] * self.experts[_prune_expert_idxs[1]](identity) + \
                         expert_weights[2] * self.experts[_prune_expert_idxs[2]](identity) + \
                         expert_weights[3] * self.experts[_prune_expert_idxs[3]](identity) + \
                         expert_weights[4] * self.experts[_prune_expert_idxs[4]](identity) + \
                         expert_weights[5] * self.experts[_prune_expert_idxs[5]](identity)
+        else:
+            outputs = self.shared_experts(identity)
         return outputs
 
     def forward_route(self, hidden_states):
