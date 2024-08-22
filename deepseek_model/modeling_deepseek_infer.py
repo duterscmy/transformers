@@ -524,28 +524,16 @@ class DeepseekMoE(nn.Module):
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
         identity = hidden_states
-        outputs = []
-        for _expert_idx in _prune_expert_idxs:
-            # print("layer idx {}, expert idx {}".format(_relative_layer, _expert_idx))
-            # print(self.experts[_expert_idx].gate_proj.data.size())
-            output = self.experts[_expert_idx](identity)
-            try:
-                expert_weight = self.dynamic_weights[(
-                    _relative_layer, _expert_idx)]
-            except:
-                print("layer {} expert {} 无预计算的动态权重".format(
-                    _relative_layer, _expert_idx))
-                # print(self.dynamic_weights.keys())
-                # print(self.dynamic_weights[_relative_layer].keys())
-                # exit()
-                # print("no expert weight，using 0.06")
-                expert_weight = 0.06
-            outputs.append(output*expert_weight)
 
-        if self.config.n_shared_experts is not None:
-            outputs.append(self.shared_experts(identity))
-        outputs = torch.stack(outputs, dim=0)
-        outputs = torch.sum(outputs, dim=0)
+        outputs = self.shared_experts(identity)
+        if len(_prune_expert_idxs) == 6:
+            expert_weights = [self.dynamic_weights[(_relative_layer, _expert_idx)] for _expert_idx in _prune_expert_idxs]
+            outputs = outputs + expert_weights[0] * self.experts[_prune_expert_idxs[0]](identity) + \
+                        expert_weights[1] * self.experts[_prune_expert_idxs[1]](identity) + \
+                        expert_weights[2] * self.experts[_prune_expert_idxs[2]](identity) + \
+                        expert_weights[3] * self.experts[_prune_expert_idxs[3]](identity) + \
+                        expert_weights[4] * self.experts[_prune_expert_idxs[4]](identity) + \
+                        expert_weights[5] * self.experts[_prune_expert_idxs[5]](identity)
         return outputs
 
     def forward_route(self, hidden_states):
