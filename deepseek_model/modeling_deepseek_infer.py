@@ -419,43 +419,20 @@ class DeepseekMoE(nn.Module):
         self.score_mode = "greedy_jl"
         # 剪枝层的顺序，根据单层剪枝ppl从小到大
         if self.num_route_experts == 0:
-            self.prune_layer_order = [11, 18, 7, 8, 2, 23, 10, 22, 13, 16,
-                                      15, 20, 24, 19, 25, 4, 6, 5, 3, 9, 21, 27, 17, 12, 26, 14, 1]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
-            self.prune_layer_order = [10, 17, 22, 1, 12,
-                                      21, 6, 15, 7, 19, 24, 9]  # greedy search ppl
-            self.prune_layer_order = [19, 12, 7, 23, 10, 14, 1, 24, 17, 15, 9, 21, 18, 6, 26] # greedy search jl
-        elif self.num_route_experts == 6 and self.score_mode == "random":
-            self.prune_layer_order = [11, 18, 7, 23, 15, 8, 10, 2, 22, 20,
-                                      24, 16, 13, 6, 3, 19, 25, 4, 5, 9, 21, 27, 17, 12, 26, 14, 1]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
+            self.prune_layer_order = [19, 12, 7, 23, 10, 14,
+                                    1, 24, 17, 15, 9, 21, 18, 6, 26]  # greedy search ppl
+        elif self.score_mode == "random":
             self.prune_layer_order = [10, 17, 22, 1, 9,
                                       6, 21, 15, 12, 14, 19, 7]  # greedy search
-        elif self.num_route_experts == 6 and self.score_mode == "l1":
-            self.prune_layer_order = [5, 18, 11, 22, 8, 13, 10, 7, 23, 16,
-                                      2, 20, 4, 24, 15, 19, 9, 3, 25, 6, 17, 1, 21, 27, 14, 12, 26]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
+        elif self.score_mode == "l1":
             self.prune_layer_order = [4, 17, 21, 10, 22,
                                       12, 7, 15, 9, 19, 6, 18]  # greedy search
         elif self.score_mode == "distribute":
-            self.prune_layer_order = [15, 10, 7, 18, 8, 2, 22, 16, 23, 11,
-                                      20, 24, 13, 6, 19, 25, 4, 3, 5, 1, 27, 9, 21, 17, 12, 26, 14]
-            # 校对偏移
-            self.prune_layer_order = [
-                layer-1 for layer in self.prune_layer_order]
             self.prune_layer_order = [14, 9, 1, 21, 22,
                                       6, 17, 10, 12, 7, 15, 24]  # greedy search
         elif self.score_mode == "greedy_jl":
-            self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
-            # self.prune_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 7, 17, 1, 24, 9, 18, 5]  # drop bad ppl layer
-        elif self.score_mode == "block_trimming":
-            self.prune_layer_order = [22,23,21,20,19,18,24,15,16,17,14,13,12,11,8]
+            self.prune_layer_order = [19, 15, 22, 10,
+                                      12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
 
@@ -523,16 +500,18 @@ class DeepseekMoE(nn.Module):
         return output
 
     def forward_prune(self, hidden_states, _prune_expert_idxs, _relative_layer):
+        import time
         identity = hidden_states
         if len(_prune_expert_idxs) == 6:
-        
-            expert_weights = [self.dynamic_weights[(_relative_layer, _expert_idx)] for _expert_idx in _prune_expert_idxs]
-            outputs =    self.shared_experts(identity) + expert_weights[0] * self.experts[_prune_expert_idxs[0]](identity) + \
-                        expert_weights[1] * self.experts[_prune_expert_idxs[1]](identity) + \
-                        expert_weights[2] * self.experts[_prune_expert_idxs[2]](identity) + \
-                        expert_weights[3] * self.experts[_prune_expert_idxs[3]](identity) + \
-                        expert_weights[4] * self.experts[_prune_expert_idxs[4]](identity) + \
-                        expert_weights[5] * self.experts[_prune_expert_idxs[5]](identity)
+            expert_weights = [self.dynamic_weights[(
+                _relative_layer, _expert_idx)] for _expert_idx in _prune_expert_idxs]
+            outputs = self.shared_experts(identity) + expert_weights[0] * self.experts[_prune_expert_idxs[0]](identity) + \
+                expert_weights[1] * self.experts[_prune_expert_idxs[1]](identity) + \
+                expert_weights[2] * self.experts[_prune_expert_idxs[2]](identity) + \
+                expert_weights[3] * self.experts[_prune_expert_idxs[3]](identity) + \
+                expert_weights[4] * self.experts[_prune_expert_idxs[4]](identity) + \
+                expert_weights[5] * \
+                self.experts[_prune_expert_idxs[5]](identity)
         else:
             outputs = self.shared_experts(identity)
         return outputs
