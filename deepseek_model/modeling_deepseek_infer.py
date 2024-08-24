@@ -53,6 +53,7 @@ from transformers.utils import (
 )
 from transformers.utils.import_utils import is_torch_fx_available
 from .configuration_deepseek import DeepseekConfig
+from .hyper import prune_layer_num
 
 
 # if is_flash_attn_2_available():
@@ -412,8 +413,9 @@ class DeepseekMoE(nn.Module):
                 config=config, intermediate_size=intermediate_size)
 
         self.layer_num = 27
-        self.num_route_experts = 6
-        self.prune_layer_num = 12
+        self.num_route_experts = 1
+        global prune_layer_num
+        self.prune_layer_num = prune_layer_num
 
         # self.score_mode = "random"
         self.score_mode = "greedy_jl"
@@ -431,8 +433,13 @@ class DeepseekMoE(nn.Module):
             self.prune_layer_order = [14, 9, 1, 21, 22,
                                       6, 17, 10, 12, 7, 15, 24]  # greedy search
         elif self.score_mode == "greedy_jl":
-            self.prune_layer_order = [19, 15, 22, 10,
-                                      12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+            if self.num_route_experts == 6:
+                self.prune_layer_order = [19, 15, 22, 10,
+                                        12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+            elif self.num_route_experts == 1:
+                self.prune_layer_order = [19, 12, 10, 23, 14, 7, 1, 6, 24, 18, 15, 21, 9, 17, 26]
+            elif self.num_route_experts == 2:
+                self.prune_layer_order = [19, 10, 14, 23, 7, 12, 6, 1, 24, 15, 21, 17, 9, 26, 22]
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
 
