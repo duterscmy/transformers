@@ -208,7 +208,7 @@ elif num_prune_expert >0 and prune_expert_strategy == "greedy_jl":
     layer_idx_to_expert_idxs = json.load(
         open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
     layer_idx_to_expert_idxs = {
-        int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+        int(key): value[:num_prune_expert] for key, value in layer_idx_to_expert_idxs.items()}
 
 dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json"))
 for key, value in dynamic_weight_tmp.items():
