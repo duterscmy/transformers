@@ -204,7 +204,7 @@ prune_expert_strategy = args.prune_expert_strategy
 # load dynamic weights
 if num_prune_expert == 0:
     layer_idx_to_expert_idxs = {idx: [] for idx in range(27)}
-elif num_prune_expert == 6 and prune_expert_strategy == "greedy_jl":
+elif num_prune_expert >0 and prune_expert_strategy == "greedy_jl":
     layer_idx_to_expert_idxs = json.load(
         open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
     layer_idx_to_expert_idxs = {
