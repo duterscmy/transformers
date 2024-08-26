@@ -838,10 +838,10 @@ class MixtralSparseMoeBlock(nn.Module):
         global_layer += 1
         if relative_layer in prune_layer_idx_to_expert_idxs:
             prune_expert_idxs = prune_layer_idx_to_expert_idxs[relative_layer]
-            print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(layer_num, global_layer, prune_expert_idxs))
+            # print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(layer_num, global_layer, prune_expert_idxs))
             output = self.forward_prune(inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
 
