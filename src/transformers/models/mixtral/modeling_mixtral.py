@@ -53,7 +53,7 @@ from ...utils import (
 )
 from ...utils.import_utils import is_torch_fx_available
 from .configuration_mixtral import MixtralConfig
-
+from transformers.models.qwen2_moe.expert_idx import prune_layer_list, layer_num_list, dynamic_weights
 
 if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
@@ -801,7 +801,7 @@ class MixtralBlockSparseTop2MLP(nn.Module):
         current_hidden_states = self.w2(current_hidden_states)
         return current_hidden_states
 
-
+global_layer = 0
 class MixtralSparseMoeBlock(nn.Module):
     """
     This implementation is
@@ -829,7 +829,35 @@ class MixtralSparseMoeBlock(nn.Module):
         # Jitter parameters
         self.jitter_noise = config.router_jitter_noise
 
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs):
+        global global_layer  # 整个推理脚本中调用layer对象的次数
+        prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
+        layer_num = layer_num_list[-1]  # 模型的层数
+        
+        relative_layer = global_layer % layer_num
+        global_layer += 1
+        if relative_layer in prune_layer_idx_to_expert_idxs:
+            prune_expert_idxs = prune_layer_idx_to_expert_idxs[relative_layer]
+            print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(layer_num, global_layer, prune_expert_idxs))
+            output = self.forward_prune(inputs, prune_expert_idxs, relative_layer)
+        else:
+            print("layer_num {} current_layer {}, use ROUTE layer".format(layer_num, global_layer))
+            output = self.forward_route(inputs)
+        return output
+
+    def forward_prune(self, hidden_states, prune_expert_idxs, relative_layer):
+        final_hidden_states = []
+        for expert_idx in prune_expert_idxs:
+            expert_layer = self.experts[expert_idx]
+            average_route_weight = dynamic_weights[(relative_layer, expert_idx)]
+            final_hidden_states.append(expert_layer(hidden_states)*average_route_weight)
+        
+        final_hidden_states = torch.stack(final_hidden_states, dim=0)
+        final_hidden_states = torch.sum(final_hidden_states, dim=0)
+        return final_hidden_states, None
+
+
+    def forward_route(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """ """
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         if self.training and self.jitter_noise > 0:

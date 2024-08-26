@@ -12,7 +12,7 @@ import json
 # import shortuuid
 import time
 
-from transformers.models.qwen2_moe.expert_idx import *
+from transformers.models.qwen2_moe.expert_idx import prune_layer_list, layer_num_list, dynamic_weights
 
 import torch
 import torch.nn.functional as F
@@ -51,7 +51,7 @@ def calculate_js_divergence(logits_p, logits_q):
 
 def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, add_special_tokens=True):
     model = model.eval()
-    layer_idx = moe_layer_idx + 2  # add embedding layer and ffn layer
+    layer_idx = moe_layer_idx + 1  # add embedding layer
 
     def encode_text_batch(input_strs):
         inputs = tokenizer.batch_encode_plus(
@@ -123,9 +123,6 @@ parser.add_argument("--load-in-8bit", action="store_true", help="load in 8 bit")
 args = parser.parse_args()
 
 pytorch_checkpoint_path = args.model
-
-
-
 no_split_module_classes = "OpenMoeDecoderLayer"
 
 # 2. Load the Model (init with empty weight to save memory)
@@ -175,7 +172,6 @@ for key, value in dynamic_weight_tmp.items():
     expert_idx = int(key[1])
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
-# print(dynamic_weights)
 
 
 # origin output (no prune)
@@ -194,57 +190,52 @@ prune_expert_idx_list = []  # greedy search expert list
 output_dict = {"expert_idxs": [],
                "mean_jl": [],
                "expert_num": []}
-try:
-    while (len(prune_expert_idx_list) < 6):  # extra expert num = 6
-        print("the {}th iteration".format(len(prune_expert_idx_list)))
-        candidate_expert_idx_list = [expert for expert in range(64)
-                                     if expert not in prune_expert_idx_list]
-        # candidate_layer_idx_list = candidate_layer_idx_list[:beam_size]
-        print("exist prune experts {}; candidate prune experts {}".format(
-            prune_expert_idx_list, candidate_expert_idx_list))
 
-        optimal_jl = 1000000
-        optimal_candidate_idx = -1
-        for candidate_idx in candidate_expert_idx_list:  # greedy search expert
-            start_time = time.time()
-            tmp_prune_expert_idx_list = prune_expert_idx_list + \
-                [candidate_idx]  # 确定layer
-            print("try to eval expert idx list {}".format(
-                tmp_prune_expert_idx_list))
+while (len(prune_expert_idx_list) < 2):  # route expert num = 2
+    print("the {}th iteration".format(len(prune_expert_idx_list)))
+    candidate_expert_idx_list = [expert for expert in range(8)
+                                    if expert not in prune_expert_idx_list]
+    print("exist prune experts {}; candidate prune experts {}".format(
+        prune_expert_idx_list, candidate_expert_idx_list))
 
-            prune_layer_idx_to_expert_idxs = {prune_layer_idx: tmp_prune_expert_idx_list}
-            print("prune layer idx to expert idxs {}".format(
-                prune_layer_idx_to_expert_idxs))
-            # update prune variables
-            prune_layer_list.append(prune_layer_idx_to_expert_idxs)
-            layer_num_list.append(num_layer)
+    optimal_jl = 1000000
+    optimal_candidate_idx = -1
+    for candidate_idx in candidate_expert_idx_list:  # greedy search expert
+        start_time = time.time()
+        tmp_prune_expert_idx_list = prune_expert_idx_list + \
+            [candidate_idx]  # 确定layer
+        print("try to eval expert idx list {}".format(
+            tmp_prune_expert_idx_list))
 
-            # eval ppl on benchmark
-            prune_get_layer_output = get_layer_output(model, prune_layer_idx, tokenizer, raw_questions, batch_size=batch_size)
-            mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
-            output_dict["mean_jl"].append(mean_jl)
-            output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
-            output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
+        prune_layer_idx_to_expert_idxs = {prune_layer_idx: tmp_prune_expert_idx_list}
+        print("prune layer idx to expert idxs {}".format(
+            prune_layer_idx_to_expert_idxs))
+        # update prune variables
+        prune_layer_list.append(prune_layer_idx_to_expert_idxs)
+        layer_num_list.append(num_layer)
 
-            if mean_jl < optimal_jl:
-                optimal_jl = mean_jl
-                optimal_candidate_idx = candidate_idx
+        # eval ppl on benchmark
+        prune_get_layer_output = get_layer_output(model, prune_layer_idx, tokenizer, raw_questions, batch_size=batch_size)
+        mean_jl = get_total_js_divergence(origin_get_layer_output, prune_get_layer_output)
+        output_dict["mean_jl"].append(mean_jl)
+        output_dict["expert_idxs"].append(tmp_prune_expert_idx_list)
+        output_dict["expert_num"].append(len(tmp_prune_expert_idx_list))
 
-            end_time = time.time()
-            print("jl {}, best_jl {}, eval jl cost {} seconds\n".format(
-                mean_jl, optimal_jl, end_time-start_time))
+        if mean_jl < optimal_jl:
+            optimal_jl = mean_jl
+            optimal_candidate_idx = candidate_idx
 
-        prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
+        end_time = time.time()
+        print("jl {}, best_jl {}, eval jl cost {} seconds\n".format(
+            mean_jl, optimal_jl, end_time-start_time))
 
-        output_dict["mean_jl"].append(optimal_jl)
-        output_dict["expert_idxs"].append(prune_expert_idx_list)
-        output_dict["expert_num"].append(len(prune_expert_idx_list))
+    prune_expert_idx_list = prune_expert_idx_list + [optimal_candidate_idx]
 
-    print(output_dict)
-    output_df = pd.DataFrame(output_dict)
-    output_file = os.path.join(output_path, "greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
-    output_df.to_excel(output_file)
-except Exception as e:
-    import traceback
-    msg = traceback.format_exc()
-    print("error: {}, {}".format(e, msg))
+    output_dict["mean_jl"].append(optimal_jl)
+    output_dict["expert_idxs"].append(prune_expert_idx_list)
+    output_dict["expert_num"].append(len(prune_expert_idx_list))
+
+print(output_dict)
+output_df = pd.DataFrame(output_dict)
+output_file = os.path.join(output_path, "greedy_search_expert_jl_layer{}.xlsx".format(prune_layer_idx))
+output_df.to_excel(output_file)
