@@ -132,7 +132,9 @@ else:
         # load_in_8bit=True,
     )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
-
+if tokenizer.pad_token is None:
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    model.resize_token_embeddings(len(tokenizer))
 
 # read benchmark
 with open(args.input, 'r') as fp:
