@@ -81,8 +81,8 @@ args = parser.parse_args()
 pytorch_checkpoint_path = args.model
 # @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
 available_gpu_ids_str = "0"
-memory_per_gpu = "38GiB"  # @param ["", "38GiB"] {allow-input: true}
-cpu_memory = '50GiB'  # @param ["50GiB"] {allow-input: true}
+memory_per_gpu = "80GiB"  # @param ["", "38GiB"] {allow-input: true}
+cpu_memory = '100GiB'  # @param ["50GiB"] {allow-input: true}
 model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
 offload = False  # @param {type:"boolean"}
 
@@ -102,24 +102,24 @@ print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
 config = AutoConfig.from_pretrained(pytorch_checkpoint_path, trust_remote_code=True)
-#weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
-with init_empty_weights():
-    model = AutoModelForCausalLM.from_config(config,
-                                             torch_dtype=eval(
-                                                 f'torch.{model_dtype}'),
-                                             trust_remote_code=True)
-print('Model dtype: ', model.dtype)
-device_map = infer_auto_device_map(model,
-                                   max_memory=available_memory,
-                                   no_split_module_classes=no_split_module_classes)
-print('Inferred Device Map: \n', device_map)
+# #weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
+# with init_empty_weights():
+#     model = AutoModelForCausalLM.from_config(config,
+#                                              torch_dtype=eval(
+#                                                  f'torch.{model_dtype}'),
+#                                              trust_remote_code=True)
+# print('Model dtype: ', model.dtype)
+# device_map = infer_auto_device_map(model,
+#                                    max_memory=available_memory,
+#                                    no_split_module_classes=no_split_module_classes)
+# print('Inferred Device Map: \n', device_map)
 
 
 if args.load_in_8bit:
     model = AutoModelForCausalLM.from_pretrained(
         pytorch_checkpoint_path,
         device_map=device_map,
-        torch_dtype=torch.bfloat16,
+        # torch_dtype=torch.bfloat16,
         trust_remote_code=True,
         load_in_8bit=True,
     )
