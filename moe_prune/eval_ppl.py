@@ -164,7 +164,7 @@ for key, value in expert_idx_to_info.items():
     ave_w = value[0] / value[1]
     new_expert_idx_to_info[new_key] = [value[0], value[1], ave_w]
 
-output_filename = "dynamic_weight_sample_eval.json"
+output_filename = args.output
 json.dump(new_expert_idx_to_info, open(output_filename, 'w'))
 
 
