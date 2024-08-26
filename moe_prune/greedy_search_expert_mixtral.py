@@ -59,7 +59,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             padding='longest',
             add_special_tokens=add_special_tokens,
             return_tensors="pt",
-            max_length=256
+            max_length=128
         )
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
@@ -73,6 +73,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
     for i in range(0, num_texts, batch_size):
         text_list_batch = input_strs[i:i + batch_size]
         input_ids, attention_mask = encode_text_batch(text_list_batch)
+        print(input_ids.size())
         with torch.no_grad():
             outputs = model(
                 input_ids, attention_mask=attention_mask, output_hidden_states=True)
