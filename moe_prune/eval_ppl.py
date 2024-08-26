@@ -73,8 +73,8 @@ parser.add_argument("--score-mode", type=str, default="l1", help="层间对专�
 parser.add_argument("--batch-size", type=int, default=4, help="并行解码的样本数量")
 parser.add_argument("--num-layer", type=int, default=24, help="默认为qw16B层数")  # deepseek 27
 parser.add_argument("--num-expert", type=int, default=64, help="默认为qw16B专家数")
-parser.add_argument("--layer-mode", default="one_layer",
-                    help="如果指定，则只剪枝一层，否则累加前面所有层")
+parser.add_argument("--load-in-8bit", action="store_true", help="load in 8bit")
+
 
 args = parser.parse_args()
 
@@ -115,12 +115,22 @@ device_map = infer_auto_device_map(model,
 print('Inferred Device Map: \n', device_map)
 
 
-model = AutoModelForCausalLM.from_pretrained(
-    pytorch_checkpoint_path,
-    device_map=device_map,
-    torch_dtype=torch.bfloat16,
-    trust_remote_code=True,
-)
+if args.load_in_8bit:
+    model = AutoModelForCausalLM.from_pretrained(
+        pytorch_checkpoint_path,
+        device_map=device_map,
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        load_in_8bit=True,
+    )
+else:
+    model = AutoModelForCausalLM.from_pretrained(
+        pytorch_checkpoint_path,
+        device_map=device_map,
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True,
+        # load_in_8bit=True,
+    )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 
@@ -142,8 +152,6 @@ batch_size = args.batch_size
 score_mode = args.score_mode
 num_layer = args.num_layer
 num_expert = args.num_expert
-
-layer_mode = args.layer_mode
 
 
 layer_num_list.append(num_layer)
