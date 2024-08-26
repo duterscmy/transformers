@@ -7,7 +7,7 @@ output_path=./greedy_search_layer_mixtral
 mkdir -p $output_path
 for layer_idx in $(seq 0 31); do  
     # 执行Python脚本，传递模型路径和要剪枝的层索引  
-    python moe_prune/greedy_search_expert.py \
+    python moe_prune/greedy_search_expert_mixtral.py \
         --dynamic-weight-file mixtral/dynamic_weights.mixtral.json \
         --model ../autodl-tmp/mixtral/ai-modelscope/mixtral/ \
         --num-layer 32 \
