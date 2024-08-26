@@ -53,6 +53,7 @@ from ...utils import (
 )
 from ...utils.import_utils import is_torch_fx_available
 from .configuration_mixtral import MixtralConfig
+from transformers.models.qwen2_moe.expert_idx import *
 
 
 if is_flash_attn_2_available():
@@ -841,6 +842,33 @@ class MixtralSparseMoeBlock(nn.Module):
         routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
         routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
         routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+
+        # compute route weights
+        flatten_weights = torch.flatten(routing_weights)
+        flatten_idxs = torch.flatten(selected_experts)
+        print(flatten_weights.size(), flatten_idxs.size())
+        _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
+        _layer_num = layer_num_list[-1]  # 模型的层数
+        global_layer_list[:] = []
+        if _global_layer == _layer_num-1:
+            global_layer_list.append(0)
+        else:
+            global_layer_list.append(_global_layer + 1)
+        
+        _relative_layer = _global_layer % _layer_num
+        # print(flatten_weights, flatten_idxs)
+        for w, idx in zip(flatten_weights, flatten_idxs):
+            w = w.item()
+            idx = idx.item()
+            key = (_relative_layer, idx)
+            if key not in expert_idx_to_info:
+                expert_idx_to_info[key] = [w, 1]
+            else:
+                sum_w = expert_idx_to_info[key][0]
+                freq = expert_idx_to_info[key][1]
+                sum_w += w
+                freq += 1
+                expert_idx_to_info[key] = [sum_w, freq]
         # we cast back to the input dtype
         routing_weights = routing_weights.to(hidden_states.dtype)
 

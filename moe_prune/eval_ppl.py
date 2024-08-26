@@ -64,7 +64,9 @@ def apply_llama_chat_template(tokenizer, input_strs, sys_prompt):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="./moe_prune/data/questions.jsonl",
-                    help="MTBench数据集路径")
+                    help="calibration data")
+parser.add_argument("--output", default="./dynamic_weight.json",
+                    help="预计算的路由权重")
 parser.add_argument("--model", default="./qw27",
                     help="模型路径")
 parser.add_argument("--score-mode", type=str, default="l1", help="层间对专家排序的指标")
@@ -118,15 +120,8 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
-    # offload_folder="offload",
-    # offload_state_dict=True,
-    # dtype=eval(f'torch.{model_dtype}'),
-    # no_split_module_classes=[no_split_module_classes]
 )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
-if "qw27" in pytorch_checkpoint_path:
-    for layer in model.model.layers:
-        layer.mlp.split()
 
 
 # read benchmark
@@ -149,15 +144,8 @@ num_layer = args.num_layer
 num_expert = args.num_expert
 
 layer_mode = args.layer_mode
-output_path = "{}_score_{}_layer_mode_{}".format(pytorch_checkpoint_path, score_mode, layer_mode)
-
-print(f"{pytorch_checkpoint_path} num_layer {num_layer} num_expert {num_expert}")
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
 
 
-# decode and eval ppl
-# no prune
 layer_num_list.append(num_layer)
 mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
 print("no prune mean_ppl {}".format(mean_ppl))
