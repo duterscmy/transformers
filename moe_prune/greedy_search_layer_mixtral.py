@@ -255,4 +255,4 @@ while (len(beam_prune_layer_idx_list[0]) < max_greedy_layer_num):
 
 output_df = pd.DataFrame(output_dict)
 output_df.to_excel(
-    "greedy_search_layer_prune_expert{}_stratedy{}_jl_beam{}.xlsx".format(num_prune_expert, prune_expert_strategy, beam_size))
+    "mixtral/greedy_search_layer_prune_expert{}_beam{}.xlsx".format(num_prune_expert, beam_size))
