@@ -118,7 +118,7 @@ config = AutoConfig.from_pretrained(pytorch_checkpoint_path, trust_remote_code=T
 if args.load_in_8bit:
     model = AutoModelForCausalLM.from_pretrained(
         pytorch_checkpoint_path,
-        device_map=device_map,
+        # device_map=device_map,
         # torch_dtype=torch.bfloat16,
         trust_remote_code=True,
         load_in_8bit=True,
@@ -126,7 +126,7 @@ if args.load_in_8bit:
 else:
     model = AutoModelForCausalLM.from_pretrained(
         pytorch_checkpoint_path,
-        device_map=device_map,
+        # device_map=device_map,
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
         # load_in_8bit=True,
