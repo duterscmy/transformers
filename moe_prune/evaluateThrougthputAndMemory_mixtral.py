@@ -55,10 +55,6 @@ model = AutoModelForCausalLM.from_pretrained(
         load_in_8bit = True
     )
 
-for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)):
-        print(name)
-exit()
 tokenizer = AutoTokenizer.from_pretrained(
     args.model_name, trust_remote_code=True)
 
@@ -79,7 +75,7 @@ layer_idx_to_expert_idxs = {
     int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 
-layer_idx_list_ppl_order = condense_layer_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18]
+layer_idx_list_ppl_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18]
 
 prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
@@ -88,7 +84,16 @@ for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
 print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 def classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-    pass
+    '''model.layers.0.block_sparse_moe.experts.7.w1'''
+    try:
+        layer_idx = int(name.split(".")[2])
+        expert_idx = int(name.split(".")[-2])
+        if layer_idx in prune_layer_idx_to_expert_idx and expert_idx in prune_layer_idx_to_expert_idx[layer_idx]:
+            return True
+    except:
+        return False
+    return False
+
 for name, module in model.named_modules():
     if isinstance(module, (torch.nn.Linear)) and classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
         print("prune {}".format(name))
