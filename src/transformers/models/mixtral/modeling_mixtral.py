@@ -55,6 +55,7 @@ from ...utils import (
 )
 from ...utils.import_utils import is_torch_fx_available
 from .configuration_mixtral import MixtralConfig
+from .exp_hyper import prune_layer_num
 # from transformers.models.qwen2_moe.expert_idx import prune_layer_list, layer_num_list, dynamic_weights
 
 if is_flash_attn_2_available():
@@ -858,7 +859,7 @@ class MixtralBlockSparseTop2MLP(nn.Module):
 
 layer_num = 32
 num_route_experts = 2
-prune_layer_num = 0
+
 trim_layer_num = 0
 
 condense_layer_num = prune_layer_num - trim_layer_num
