@@ -858,7 +858,7 @@ class MixtralBlockSparseTop2MLP(nn.Module):
 
 layer_num = 32
 num_route_experts = 2
-prune_layer_num = 3
+prune_layer_num = 0
 trim_layer_num = 0
 
 condense_layer_num = prune_layer_num - trim_layer_num
@@ -954,13 +954,13 @@ class MixtralSparseMoeBlock(nn.Module):
         global_layer += 1
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
-            print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(
-                self.layer_num, global_layer, prune_expert_idxs))
+            # print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(
+            #     self.layer_num, global_layer, prune_expert_idxs))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(
-                self.layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(
+            #     self.layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
 
