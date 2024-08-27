@@ -55,7 +55,9 @@ model = AutoModelForCausalLM.from_pretrained(
         load_in_8bit = True
     )
 
-print(model)
+for name, module in model.named_modules():
+    if isinstance(module, (torch.nn.Linear)):
+        print(name)
 exit()
 tokenizer = AutoTokenizer.from_pretrained(
     args.model_name, trust_remote_code=True)
