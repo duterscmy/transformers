@@ -858,7 +858,7 @@ class MixtralBlockSparseTop2MLP(nn.Module):
 
 
 layer_num = 32
-num_route_experts = 2
+num_route_experts = 1
 
 trim_layer_num = 0
 
