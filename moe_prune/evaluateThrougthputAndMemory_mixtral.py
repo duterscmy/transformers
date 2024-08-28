@@ -75,7 +75,7 @@ layer_idx_to_expert_idxs = {
     int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 
-layer_idx_list_ppl_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18]
+layer_idx_list_ppl_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18, 10, 15, 11, 26, 2, 17]
 
 prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
