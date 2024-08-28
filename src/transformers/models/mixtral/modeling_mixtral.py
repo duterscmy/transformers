@@ -967,7 +967,7 @@ class MixtralSparseMoeBlock(nn.Module):
 
     def forward_prune(self, hidden_states, prune_expert_idxs, relative_layer):
         final_hidden_states = []
-        for expert_idx in prune_expert_idxs:
+        for expert_idx in prune_expert_idxs[:self.num_route_experts]:
             expert_layer = self.experts[expert_idx]
             average_route_weight = dynamic_weights[(
                 relative_layer, expert_idx)]
