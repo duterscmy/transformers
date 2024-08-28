@@ -88,7 +88,7 @@ def classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
     try:
         layer_idx = int(name.split(".")[2])
         expert_idx = int(name.split(".")[-2])
-        if layer_idx in prune_layer_idx_to_expert_idx and expert_idx in prune_layer_idx_to_expert_idx[layer_idx]:
+        if layer_idx in prune_layer_idx_to_expert_idx and expert_idx not in prune_layer_idx_to_expert_idx[layer_idx]:
             return True
     except:
         return False
