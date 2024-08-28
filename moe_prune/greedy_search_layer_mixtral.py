@@ -197,7 +197,7 @@ print("compute origin layer output cost {}".format(e-s))
 
 beam_size = 1
 max_greedy_layer_num = num_prune_layer
-beam_prune_layer_idx_list = [[[12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18]]]
+beam_prune_layer_idx_list = [[12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18]]
 # prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
 # no_prune_list = [0, 8, 11, 13, 16, 20, 25 ,26]
 output_dict = {"layer_idxs": [],
