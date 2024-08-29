@@ -27,10 +27,12 @@ parser.add_argument('--num_repeats', type=int, default=500,
 
 parser.add_argument("--prune-num-layer", default=9, type=int,
                     help="剪枝后剩余的layer数量")
+parser.add_argument("--prune-num-expert", default=0, type=int,
+                    help="剪枝后剩余的expert数量")
 args = parser.parse_args()
 
 prune_num_layer = args.prune_num_layer
-
+prune_num_expert = args.prune_num_expert
 # Load a sample of the Wiki dataset
 dataset = load_dataset("json",
                        data_files="datasets/c4-train.00000-of-01024.head2k.json",

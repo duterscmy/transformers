@@ -55,7 +55,7 @@ from ...utils import (
 )
 from ...utils.import_utils import is_torch_fx_available
 from .configuration_mixtral import MixtralConfig
-from .exp_hyper import prune_layer_num
+from .exp_hyper import prune_layer_num, num_route_experts, trim_layer_num
 # from transformers.models.qwen2_moe.expert_idx import prune_layer_list, layer_num_list, dynamic_weights
 
 if is_flash_attn_2_available():
@@ -858,17 +858,13 @@ class MixtralBlockSparseTop2MLP(nn.Module):
 
 
 layer_num = 32
-num_route_experts = 1
-
-trim_layer_num = 0
 
 condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
 
 condense_layer_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18, 10, 15, 11, 26, 2, 17]
 
-layer_trim_layer_order = [22, 23, 21, 20,
-                          19, 18, 24, 15, 16, 17, 14, 13, 12, 11, 8]
+layer_trim_layer_order = [24, 25, 26, 22, 23, 21, 20, 27, 11, 12, 28, 10, 8 ,19 ,15]
 
 # 确定剪枝的层
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
