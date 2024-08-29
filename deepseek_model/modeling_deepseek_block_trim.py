@@ -393,8 +393,8 @@ class AddAuxiliaryLoss(torch.autograd.Function):
 
 
 layer_num = 27
-num_route_experts = 0
-prune_layer_num = 9
+# num_route_experts = 0
+# prune_layer_num = 9
 trim_layer_num = 0
 
 condense_layer_num = prune_layer_num - trim_layer_num
