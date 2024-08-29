@@ -2,7 +2,9 @@
 
 # 1.下载mixtral模型
 ```
-python moe_prune/download_mixtral.py  # cache_dir需要改为合适的路径
+# cache_dir需要改为合适的路径
+# 路径下需要有至少190G空间
+python moe_prune/download_mixtral.py  
 ```
 # 2.安装lm-eval
 ```
