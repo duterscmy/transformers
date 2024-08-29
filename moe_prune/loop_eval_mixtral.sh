@@ -1,5 +1,6 @@
 set -ex
 transformers_dir=/root/transformers
+model_dir=/root/autodl-tmp/mixtral/ai-modelscope/mixtral
 hyper_file="${transformers_dir}/src/transformers/models/mixtral/exp_hyper.py"
 
 for prune_expert_num in 1 2; do
@@ -10,7 +11,7 @@ for prune_expert_num in 1 2; do
     echo $hyper > $hyper_file
 
     lm_eval --model hf \
-    --model_args pretrained=/root/autodl-tmp/mixtral/ai-modelscope/mixtral,load_in_8bit=True,trust_remote_code=True \
+    --model_args pretrained=$model_dir,load_in_8bit=True,trust_remote_code=True \
     --device cuda \
     --tasks hellaswag,piqa \
     --batch_size 8 \

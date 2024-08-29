@@ -863,7 +863,6 @@ condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
 
 condense_layer_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18, 10, 15, 11, 26, 2, 17]
-
 layer_trim_layer_order = [24, 25, 26, 22, 23, 21, 20, 27, 11, 12, 28, 10, 8 ,19 ,15]
 
 # 确定剪枝的层
