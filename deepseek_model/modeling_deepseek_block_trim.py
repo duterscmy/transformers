@@ -53,6 +53,7 @@ from transformers.utils import (
 )
 from transformers.utils.import_utils import is_torch_fx_available
 from .configuration_deepseek import DeepseekConfig
+from .exp_hyper import num_route_experts, prune_layer_num
 
 
 # if is_flash_attn_2_available():
@@ -394,7 +395,7 @@ class AddAuxiliaryLoss(torch.autograd.Function):
 layer_num = 27
 num_route_experts = 0
 prune_layer_num = 9
-trim_layer_num = 3
+trim_layer_num = 0
 
 condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
@@ -402,7 +403,7 @@ condense_layer_num = prune_layer_num - trim_layer_num
 if num_route_experts == 6:
     condense_layer_order = [19, 15, 22, 10,
                                     12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
-elif num_route_experts == 0:
+else:
     condense_layer_order = [19, 12, 7, 23, 10, 14,
                                     1, 24, 17, 15, 9, 21, 18, 6, 26]
 
