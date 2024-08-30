@@ -123,34 +123,54 @@ parser.add_argument("--load-in-8bit", action="store_true", help="load in 8 bit")
 args = parser.parse_args()
 
 pytorch_checkpoint_path = args.model
+# @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
+available_gpu_ids_str = "0"
+memory_per_gpu = "38GiB"  # @param ["", "38GiB"] {allow-input: true}
+cpu_memory = '50GiB'  # @param ["50GiB"] {allow-input: true}
+model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
+offload = False  # @param {type:"boolean"}
 
-
+if torch.cuda.is_available():
+    cuda_list = available_gpu_ids_str.split(',')
+else:
+    available_gpu_ids_str, memory_per_gpu = "", ""
+    model_dtype = "bfloat16"
+    cuda_list = []
 
 no_split_module_classes = "OpenMoeDecoderLayer"
+
+# 1. Allocate Devices for Inference
+available_memory = {int(cuda): memory_per_gpu for cuda in cuda_list}
+available_memory['cpu'] = cpu_memory
+print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
 config = AutoConfig.from_pretrained(
     pytorch_checkpoint_path, trust_remote_code=True)
+# weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
+with init_empty_weights():
+    model = AutoModelForCausalLM.from_config(config,
+                                             torch_dtype=eval(
+                                                 f'torch.{model_dtype}'),
+                                             trust_remote_code=True)
+print('Model dtype: ', model.dtype)
+device_map = infer_auto_device_map(model,
+                                   max_memory=available_memory,
+                                   no_split_module_classes=no_split_module_classes)
+print('Inferred Device Map: \n', device_map)
 
-if args.load_in_8bit:
-    model = AutoModelForCausalLM.from_pretrained(
-        pytorch_checkpoint_path,
-        torch_dtype=torch.bfloat16,
-        trust_remote_code=True,
-        load_in_8bit = True
-    )
-else:
-    model = AutoModelForCausalLM.from_pretrained(
-        pytorch_checkpoint_path,
-        torch_dtype=torch.bfloat16,
-        trust_remote_code=True,
-    )
-    model = model.cuda()
 
+model = AutoModelForCausalLM.from_pretrained(
+    pytorch_checkpoint_path,
+    device_map=device_map,
+    torch_dtype=torch.bfloat16,
+    trust_remote_code=True,
+    # offload_folder="offload",
+    # offload_state_dict=True,
+    # dtype=eval(f'torch.{model_dtype}'),
+    # no_split_module_classes=[no_split_module_classes]
+)
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
-if tokenizer.pad_token is None:
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    model.resize_token_embeddings(len(tokenizer))
 
 # read calibration data
 with open(args.input, 'r') as fp:
