@@ -59,7 +59,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             padding='longest',
             add_special_tokens=add_special_tokens,
             return_tensors="pt",
-            max_length=512,
+            max_length=256,
             truncation=True
         )
         input_ids = inputs.input_ids.to(model.device)
