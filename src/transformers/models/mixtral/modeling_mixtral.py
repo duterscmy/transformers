@@ -951,13 +951,13 @@ class MixtralSparseMoeBlock(nn.Module):
         global_layer += 1
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = self.layer_idx_to_expert_idxs[relative_layer]
-            print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(
-                self.layer_num, global_layer, prune_expert_idxs))
+            # print("layer_num {} current_layer {}, use PRUNE layer, prune idxs {}".format(
+            #     self.layer_num, global_layer, prune_expert_idxs))
             output = self.forward_prune(
                 inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(
-                self.layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(
+            #     self.layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
 
@@ -1085,8 +1085,8 @@ class MixtralDecoderLayer(nn.Module):
         global global_layer  # 整个推理脚本中调用layer对象的次数
         relative_layer = global_layer % self.layer_num
         if relative_layer in self.trim_layer_idxs:
-            print("layer_num {} current_layer {}, use LAYER TRIM layer".format(
-                self.layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use LAYER TRIM layer".format(
+            #     self.layer_num, global_layer))
             router_logits = None
             global_layer += 1
         else:
