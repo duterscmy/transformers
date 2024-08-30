@@ -864,7 +864,11 @@ condense_layer_num = prune_layer_num - trim_layer_num
 
 condense_layer_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18, 10, 15, 11, 26, 2, 17]
 
-layer_trim_layer_order = [24, 25, 26, 22, 23, 21, 20, 27, 11, 12, 28, 10, 8 ,19 ,15]
+layer_trim = "layer_trim"
+if layer_trim == "block_trim":
+    layer_trim_layer_order = [24, 25, 26, 22, 23, 21, 20, 27, 11, 12, 28, 10, 8 ,19 ,15]
+elif layer_trim == "layer_trim":
+    layer_trim_layer_order = [24, 25, 23 ,26, 22, 21, 27, 20, 12, 13, 11, 19, 15, 14, 28]
 
 # 确定剪枝的层
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
@@ -881,10 +885,6 @@ prune_layer_idxs = condense_layer_order[:condense_layer_num]
 
 print("trim layer idx {}".format(trim_layer_idxs))
 print("condense layer idx {}".format(prune_layer_idxs))
-# print("layer idx map after trimming{}".format(layer_map_trim))
-
-# prune_layer_idxs = list(map(lambda x: layer_map_trim[x], prune_layer_idxs))
-# print("condense layer idx after mapping {}".format(prune_layer_idxs))
 
 # 层索引 to 专家索引序列
 current_dir = "/root/transformers/mixtral"
@@ -1034,6 +1034,10 @@ class MixtralDecoderLayer(nn.Module):
             config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = MixtralRMSNorm(
             config.hidden_size, eps=config.rms_norm_eps)
+        
+        global layer_num, trim_layer_idxs
+        self.layer_num = layer_num
+        self.trim_layer_idxs = trim_layer_idxs
 
     def forward(
         self,
@@ -1078,10 +1082,16 @@ class MixtralDecoderLayer(nn.Module):
         hidden_states = residual + hidden_states
 
         # Fully Connected
-        residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states)
-        hidden_states, router_logits = self.block_sparse_moe(hidden_states)
-        hidden_states = residual + hidden_states
+        global global_layer  # 整个推理脚本中调用layer对象的次数
+        relative_layer = global_layer % self.layer_num
+        if relative_layer in self.trim_layer_idxs:
+            router_logits = None
+            global_layer += 1
+        else:
+            residual = hidden_states
+            hidden_states = self.post_attention_layernorm(hidden_states)
+            hidden_states, router_logits = self.block_sparse_moe(hidden_states)
+            hidden_states = residual + hidden_states
 
         outputs = (hidden_states,)
 
