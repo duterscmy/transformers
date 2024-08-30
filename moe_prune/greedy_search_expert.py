@@ -145,6 +145,7 @@ else:
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
     )
+    model = model.cuda()
 
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 if tokenizer.pad_token is None:
