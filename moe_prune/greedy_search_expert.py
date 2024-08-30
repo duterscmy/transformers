@@ -163,13 +163,15 @@ print('Inferred Device Map: \n', device_map)
 model = AutoModelForCausalLM.from_pretrained(
     pytorch_checkpoint_path,
     device_map=device_map,
-    torch_dtype=torch.bfloat16,
+    # torch_dtype=torch.bfloat16,
     trust_remote_code=True,
+    load_in_8bit=True
     # offload_folder="offload",
     # offload_state_dict=True,
     # dtype=eval(f'torch.{model_dtype}'),
     # no_split_module_classes=[no_split_module_classes]
 )
+model = model.cuda()
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 # read calibration data
