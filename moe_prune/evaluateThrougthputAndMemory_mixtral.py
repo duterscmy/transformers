@@ -2,7 +2,7 @@ from utils import print_trainable_parameters, \
     classify_shared_experts, \
     classify_remained_experts, \
     classify_pruned_experts
-from config import get_layer_idx_order, dynamic_weights, get_layer_idx_to_expert_idx
+
 import gc
 import argparse
 import numpy as np
@@ -34,11 +34,14 @@ parser.add_argument("--prune-num-expert", default=6, type=int,
                     help="剪枝后剩余的expert数量")
 parser.add_argument("--prune-num-layer", default=9, type=int,
                     help="剪枝后剩余的layer数量")
+parser.add_argument("--layer-trim-num-layer", default=9, type=int,
+                    help="layer trim层数")
 args = parser.parse_args()
 
 score_mode = args.score_mode
 prune_num_expert = args.prune_num_expert
 prune_num_layer = args.prune_num_layer
+layer_trim_num_layer = args.layer_trim_num_layer
 
 # Load a sample of the Wiki dataset
 dataset = load_dataset("json",
@@ -75,10 +78,24 @@ layer_idx_to_expert_idxs = {
     int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 
-layer_idx_list_ppl_order = [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18, 10, 15, 11, 26, 2, 17]
-
+condense_layer_order= [12, 14, 13, 8, 7, 20, 23, 22, 6, 16, 9, 25, 5, 24, 18, 10, 15, 11, 26, 2, 17]
+layer_trim_layer_order = [24, 25, 23 ,26, 22, 21, 27, 20, 12, 13, 11, 19, 15, 14, 28]
+trim_layer_idxs = layer_trim_layer_order[:layer_trim_num_layer]
+layer_map_trim = {}
+new_layer_idx = 0
+# for origin_layer_idx in range(32):
+#     if origin_layer_idx in trim_layer_idxs:
+#         continue
+#     layer_map_trim[origin_layer_idx] = new_layer_idx
+#     new_layer_idx += 1
+condense_layer_num = prune_num_layer - layer_trim_num_layer
+condense_layer_order = list(
+    filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
+condense_layer_idxs = condense_layer_order[:condense_layer_num]
+print("trim layer idxs :{}".format(trim_layer_idxs))
+print("condense layer idxs: {}".format(condense_layer_idxs))
 prune_layer_idx_to_expert_idx = {}
-for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
+for prune_layer_idx in condense_layer_idxs:
     prune_expert_idx_list = layer_idx_to_expert_idxs[prune_layer_idx][:prune_num_expert]
     prune_layer_idx_to_expert_idx[prune_layer_idx] = prune_expert_idx_list
 print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
@@ -94,9 +111,30 @@ def classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
         return False
     return False
 
+def classify_layer_trim_experts(name, trim_layer_idxs):
+    '''model.layers.0.block_sparse_moe.experts.7.w1'''
+    try:
+        layer_idx = int(name.split(".")[2])
+        expert_idx = int(name.split(".")[-2])
+        if layer_idx in trim_layer_idxs and "experts" in name:
+            return True
+    except:
+        return False
+    return False
+
 for name, module in model.named_modules():
-    if isinstance(module, (torch.nn.Linear)) and classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-        print("prune {}".format(name))
+    if isinstance(module, (torch.nn.Linear)) and \
+          classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
+        print("condense {}".format(name))
+        for param in module.parameters():
+            param.requires_grad = False
+            param.data = torch.tensor(
+                [[0.1]], dtype=param.dtype, device=param.device)
+            
+for name, module in model.named_modules():
+    if isinstance(module, (torch.nn.Linear)) and \
+          classify_layer_trim_experts(name, trim_layer_idxs):
+        print("layer trim {}".format(name))
         for param in module.parameters():
             param.requires_grad = False
             param.data = torch.tensor(

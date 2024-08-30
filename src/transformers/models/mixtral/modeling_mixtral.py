@@ -874,11 +874,11 @@ elif layer_trim == "layer_trim":
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
 layer_map_trim = {}
 new_layer_idx = 0
-for origin_layer_idx in range(32):
-    if origin_layer_idx in trim_layer_idxs:
-        continue
-    layer_map_trim[origin_layer_idx] = new_layer_idx
-    new_layer_idx += 1
+# for origin_layer_idx in range(32):
+#     if origin_layer_idx in trim_layer_idxs:
+#         continue
+#     layer_map_trim[origin_layer_idx] = new_layer_idx
+#     new_layer_idx += 1
 condense_layer_order = list(
     filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
 prune_layer_idxs = condense_layer_order[:condense_layer_num]
