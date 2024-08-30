@@ -171,7 +171,7 @@ model = AutoModelForCausalLM.from_pretrained(
     # dtype=eval(f'torch.{model_dtype}'),
     # no_split_module_classes=[no_split_module_classes]
 )
-model = model.cuda()
+# model = model.cuda()
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 # read calibration data
