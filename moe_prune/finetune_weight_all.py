@@ -162,18 +162,18 @@ for key, value in dynamic_weight_tmp.items():
     w = value[-1]
     dynamic_weights[(layer_idx, expert_idx)] = w
 
-for layer_idx, layer in enumerate(model.model.layers):
-    if layer_idx == 0:
-        continue
-    moe_layer_idx = layer_idx - 1
-    for expert_idx, param in enumerate(layer.mlp.expert_weights):
-        static_weight = dynamic_weights[(moe_layer_idx, expert_idx)]
-        if args.finetune_route_weight:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
-        param.data = torch.tensor(
-            [static_weight], dtype=param.dtype, device=param.device)
+# for layer_idx, layer in enumerate(model.model.layers):
+#     if layer_idx == 0:
+#         continue
+#     moe_layer_idx = layer_idx - 1
+#     for expert_idx, param in enumerate(layer.mlp.expert_weights):
+#         static_weight = dynamic_weights[(moe_layer_idx, expert_idx)]
+#         if args.finetune_route_weight:
+#             param.requires_grad = True
+#         else:
+#             param.requires_grad = False
+#         param.data = torch.tensor(
+#             [static_weight], dtype=param.dtype, device=param.device)
 print("load static expert weight")
 print_trainable_parameters(model)
 
