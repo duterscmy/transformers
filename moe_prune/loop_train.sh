@@ -18,6 +18,6 @@ for prune_expert_num in 6 0; do
         --score-mode greedy_jl \
         --prune-num-expert $prune_expert_num \
         --prune-num-layer $prune_layer_num \
-        --batch-size 24 > $eval_log
+        --batch-size 16 > $eval_log
     done
 done
