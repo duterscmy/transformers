@@ -440,6 +440,8 @@ class DeepseekMoE(nn.Module):
                 self.prune_layer_order = [19, 12, 10, 23, 14, 7, 1, 6, 24, 18, 15, 21, 9, 17, 26]
             elif self.num_route_experts == 2:
                 self.prune_layer_order = [19, 10, 14, 23, 7, 12, 6, 1, 24, 15, 21, 17, 9, 26, 22]
+        elif self.score_mode == "greedy_jl_c4":
+            self.prune_layer_order =[ 19, 6, 22, 15, 12, 9, 26, 18, 20, 23, 11, 3, 16, 24, 8]
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
 
@@ -467,6 +469,12 @@ class DeepseekMoE(nn.Module):
         elif self.score_mode == "greedy_jl" or self.score_mode == "block_trimming":
             expert_order_path = os.path.join(
                 current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
+            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+            layer_idx_to_expert_idxs = {
+                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+        elif self.score_mode == "greedy_jl_c4":
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.greedy_jl.c4.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
