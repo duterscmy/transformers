@@ -181,6 +181,8 @@ print_trainable_parameters(model)
 # 加载数据集
 dataset = load_dataset('json', data_files=[
                        args.input])
+c4_dataset = load_dataset('json', data_files=[
+                       'datasets/c4-train.00000-of-01024.5w.json'])
 eval_dataset = load_dataset(
     'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
@@ -198,7 +200,8 @@ def tokenize_function(examples):
 # 应用tokenize函数
 tokenized_datasets = dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
-
+c4_tokenized_datasets = c4_dataset.map(
+    tokenize_function, batched=True, remove_columns=["text"])
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
@@ -242,13 +245,38 @@ training_args = TrainingArguments(
     logging_steps=5,                        # 日志记录的步数
     learning_rate=max_lr,
     # lr_scheduler_type="cosine",
-    warmup_steps=200,
+    warmup_ratio=0.1,
     # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     # eval_strategy="steps",
     logging_dir=os.path.join(output_dir, output_file, "run_log")
     # 注意：其他参数可以根据需要进行调整
 )
 
+######C4######
+# Calculate total training steps
+num_training_steps = len(
+    c4_tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
+# Define minimum learning rate
+min_lr = 5e-6
+
+# Create the optimizer
+optimizer = torch.optim.AdamW(
+    model.parameters(), lr=training_args.learning_rate)
+
+# Create the custom scheduler
+scheduler = get_custom_schedule_with_warmup(
+    optimizer, training_args.warmup_steps, num_training_steps, min_lr)
+# 初始化Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=c4_tokenized_datasets['train'],
+    compute_metrics=compute_metrics,
+    optimizers=(optimizer, scheduler)
+)
+trainer.train()
+
+#######SFT#######
 # Calculate total training steps
 num_training_steps = len(
     tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
