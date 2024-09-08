@@ -182,7 +182,7 @@ print_trainable_parameters(model)
 dataset = load_dataset('json', data_files=[
                        args.input])
 c4_dataset = load_dataset('json', data_files=[
-                       'datasets/c4-train.00000-of-01024.5w.json'])
+                       'datasets/c4-train.00000-of-01024.1w.json'])
 eval_dataset = load_dataset(
     'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
