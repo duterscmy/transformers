@@ -812,7 +812,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         """ """
         global global_layer
         num_layer = layer_num_list[-1]
-        relative_layer = global_layer // num_layer
+        relative_layer = global_layer % num_layer
         global_layer += 1
 
         batch_size, sequence_length, hidden_dim = hidden_states.shape
@@ -874,7 +874,7 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         flatten_shared_weights = torch.flatten(shared_expert_weight)
         for w in flatten_shared_weights:
             w = w.item()
-            key = (relative_layer, -1)  # -1表示shared expert
+            key = (relative_layer, 100)  # 100表示shared expert
             if key not in expert_idx_to_info:
                 expert_idx_to_info[key] = [w, 1]
             else:
