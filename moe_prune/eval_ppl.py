@@ -81,8 +81,8 @@ args = parser.parse_args()
 pytorch_checkpoint_path = args.model
 # @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
 available_gpu_ids_str = "0"
-memory_per_gpu = "80GiB"  # @param ["", "38GiB"] {allow-input: true}
-cpu_memory = '100GiB'  # @param ["50GiB"] {allow-input: true}
+memory_per_gpu = "48GiB"  # @param ["", "38GiB"] {allow-input: true}
+cpu_memory = '50GiB'  # @param ["50GiB"] {allow-input: true}
 model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
 offload = False  # @param {type:"boolean"}
 
