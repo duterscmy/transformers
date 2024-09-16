@@ -102,17 +102,17 @@ print('Available Devices and Memory: ', available_memory)
 
 # 2. Load the Model (init with empty weight to save memory)
 config = AutoConfig.from_pretrained(pytorch_checkpoint_path, trust_remote_code=True)
-# #weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
-# with init_empty_weights():
-#     model = AutoModelForCausalLM.from_config(config,
-#                                              torch_dtype=eval(
-#                                                  f'torch.{model_dtype}'),
-#                                              trust_remote_code=True)
-# print('Model dtype: ', model.dtype)
-# device_map = infer_auto_device_map(model,
-#                                    max_memory=available_memory,
-#                                    no_split_module_classes=no_split_module_classes)
-# print('Inferred Device Map: \n', device_map)
+#weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
+with init_empty_weights():
+    model = AutoModelForCausalLM.from_config(config,
+                                             torch_dtype=eval(
+                                                 f'torch.{model_dtype}'),
+                                             trust_remote_code=True)
+print('Model dtype: ', model.dtype)
+device_map = infer_auto_device_map(model,
+                                   max_memory=available_memory,
+                                   no_split_module_classes=no_split_module_classes)
+print('Inferred Device Map: \n', device_map)
 
 
 if args.load_in_8bit:
@@ -126,10 +126,9 @@ if args.load_in_8bit:
 else:
     model = AutoModelForCausalLM.from_pretrained(
         pytorch_checkpoint_path,
-        # device_map=device_map,
+        device_map=device_map,
         torch_dtype=torch.bfloat16,
         trust_remote_code=True,
-        # load_in_8bit=True,
     )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 if tokenizer.pad_token is None:
