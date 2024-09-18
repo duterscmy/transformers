@@ -53,7 +53,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
     model = model.eval()
 
     #很重要！！！
-    layer_idx = moe_layer_idx+2# add embedding layer and ffn layer
+    layer_idx = moe_layer_idx+1# add embedding layer and ffn layer
 
     def encode_text_batch(input_strs):
         inputs = tokenizer.batch_encode_plus(
@@ -80,9 +80,9 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             outputs = model(
                 input_ids, attention_mask=attention_mask, output_hidden_states=True)
             hidden_states = outputs.hidden_states
-            print(len(hidden_states))
-            for each in hidden_states:
-                print(each.size())
+            # print(len(hidden_states))
+            # for each in hidden_states:
+            #     print(each.size())
             # exit()
             layer_output = hidden_states[layer_idx]
             layer_output = layer_output.to(torch.float32)
@@ -179,8 +179,6 @@ model = AutoModelForCausalLM.from_pretrained(
     # no_split_module_classes=[no_split_module_classes]
 )
 
-print(model)
-exit()
 model = model.cuda()
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
