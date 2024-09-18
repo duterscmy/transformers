@@ -81,7 +81,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             if layer_idx < 23:
                 layer_output = hidden_states[layer_idx]
             else:
-                layer_output = outputs.logits
+                layer_output = outputs.last_hidden_state
             layer_output = layer_output.to(torch.float32)
             # print("layer output {}".format(layer_output))
             # print("layer output size {}".format(layer_output.size()))
