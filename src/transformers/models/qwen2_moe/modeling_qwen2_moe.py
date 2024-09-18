@@ -49,7 +49,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_qwen2_moe import Qwen2MoeConfig
-from .expert_idx import *
+from .exp_hyper import num_route_experts, prune_layer_num
 
 
 if is_flash_attn_2_available():
@@ -789,6 +789,58 @@ QWEN2MOE_ATTENTION_CLASSES = {
     "sdpa": Qwen2MoeSdpaAttention,
 }
 
+layer_num = 24
+# num_route_experts = 0
+# prune_layer_num = 9
+trim_layer_num = 0
+condense_layer_num = prune_layer_num - trim_layer_num
+# layer_num -= trim_layer_num
+
+if num_route_experts == 4:  # greedy search with 4 extra experts
+    condense_layer_order = [11, 9, 3, 13, 23, 18, 21, 20, 16, 10, 19, 22, 14, 4, 8]
+else:  # greedy search with only shared expert
+    condense_layer_order = [11, 3, 9, 14, 18, 23, 19, 12, 20, 8, 21, 16, 15, 10, 22]
+
+layer_trim_layer_order = [11, 3, 9, 14, 18, 23, 19, 12, 20, 8, 21, 16, 15, 10, 22]
+
+# get condense layer and trim layer
+trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
+layer_map_trim = {}  # layer trim剪枝前后的映射
+new_layer_idx = 0
+for origin_layer_idx in range(24):
+    if origin_layer_idx in trim_layer_idxs:
+        continue
+    layer_map_trim[origin_layer_idx] = new_layer_idx
+    new_layer_idx += 1
+
+condense_layer_order = list(filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
+prune_layer_idxs = condense_layer_order[:condense_layer_num]
+
+print("trim layer idx {}".format(trim_layer_idxs))
+print("condense layer idx {}".format(prune_layer_idxs))
+# print("layer idx map after trimming{}".format(layer_map_trim))
+# prune_layer_idxs = list(map(lambda x: layer_map_trim[x], prune_layer_idxs))
+# print("condense layer idx after mapping {}".format(prune_layer_idxs))
+
+# 层索引 to 专家索引序列
+expert_order_path = "/root/transformers/qwen_model/layer_idx_to_expert_idx.greedy_jl.json"
+layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+layer_idx_to_expert_idxs = {
+    int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+
+# 专家的动态权重
+dynamic_weights = {}
+dynamic_weights_path ="/root/transformers/qwen_model/dynamic_weight.qwen.json"
+dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
+for key, value in dynamic_weight_tmp.items():
+    key = key.split("-")
+    layer_idx = int(key[0])
+    expert_idx = int(key[1])
+    w = value[-1]
+    dynamic_weights[(layer_idx, expert_idx)] = w
+dynamic_weights = dynamic_weights
+
+global_layer = 0  # 整个推理脚本中调用layer对象的次数
 
 class Qwen2MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
@@ -806,102 +858,45 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         self.shared_expert = Qwen2MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
-    def split(self):
-        # divide shared experts
-        print("before split num experts {}".format(len(self.experts)))
-        config = self.config
-        self.divided_shared_experts = nn.ModuleList(
-            [Qwen2MoeMLP(config, intermediate_size=config.moe_intermediate_size) for _ in range(4)]
-        )
-        shared_gate_weight = self.shared_expert.gate_proj.weight.data
-        shared_up_weight = self.shared_expert.up_proj.weight.data
-        shared_down_weight = self.shared_expert.down_proj.weight.data
-        print("before split weight size:")
-        print(shared_gate_weight.size(), shared_up_weight.size(), shared_down_weight.size())
-        gate_chunks = torch.chunk(shared_gate_weight, 4, dim=0)
-        up_chunks = torch.chunk(shared_up_weight, 4, dim=0)
-        down_chunks = torch.chunk(shared_down_weight, 4, dim=1)
-        print("after split weight size:")
-        print(gate_chunks[0].size(), up_chunks[0].size(), down_chunks[0].size())
-
-        for expert, gate_w, up_w, down_w in zip(self.divided_shared_experts, gate_chunks, \
-                                                up_chunks, down_chunks):
-            with torch.no_grad():  # 禁用梯度计算
-                expert.gate_proj.weight = nn.Parameter(gate_w)
-                expert.up_proj.weight = nn.Parameter(up_w)
-                expert.down_proj.weight = nn.Parameter(down_w)
-        
-        self.experts = self.experts + self.divided_shared_experts
-        print("split shared expert to 4 expert, num expert {}".format(len(self.experts)))
+        global prune_layer_idxs, layer_num, num_route_experts
+        self.prune_layer_idxs = prune_layer_idxs
+        self.layer_num = layer_num
+        self.num_route_experts = num_route_experts
 
     def forward(self, inputs):
-        try:
-            _global_layer = global_layer_list[-1]  # 整个推理脚本中调用layer对象的次数
-            _prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
-            _layer_num = layer_num_list[-1]  # 模型的层数
-            global_layer_list[:] = []
-            if _global_layer == _layer_num-1:
-                global_layer_list.append(0)
-            else:
-                global_layer_list.append(_global_layer + 1)
-            
-
-            _relative_layer = _global_layer % _layer_num
-            if _relative_layer in _prune_layer_idx_to_expert_idxs:
-                _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
-                print("layer_num {} current_layer {}, use PUNE layer".format(_layer_num, _global_layer))
-                output = self.forward_prune(inputs, _prune_expert_idxs)
-            else:
-                print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, _global_layer))
-                output = self.forward_route(inputs)
-        except Exception as e:
-            err_msg = traceback.format_exc()
-            print(e, err_msg)
+        global global_layer
+        relative_layer = global_layer % self.layer_num
+        global_layer += 1
+        if relative_layer in self.prune_layer_idxs:
+            prune_expert_idxs = layer_idx_to_expert_idxs[relative_layer][:self.num_route_experts]
+            # print("layer_num {} current_layer {}, use PRUNE layer".format(_layer_num, global_layer))
+            output = self.forward_prune(inputs, prune_expert_idxs, relative_layer)
+        else:
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
     
-    def forward_prune(self, hidden_states: torch.Tensor, _prune_expert_idxs) -> torch.Tensor:
+    def forward_prune(self, hidden_states: torch.Tensor, prune_expert_idxs, relative_layer) -> torch.Tensor:
         """ """
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
         # # router_logits: (batch * sequence_length, n_experts)
         router_logits = self.gate(hidden_states)
 
-        # routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-        # routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
-        # if self.norm_topk_prob:
-        #     routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
-        # # we cast back to the input dtype
-        # routing_weights = routing_weights.to(hidden_states.dtype)
-
-        # final_hidden_states = torch.zeros(
-        #     (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
-        # )
-
-        # One hot encode the selected experts to create an expert mask
-        # this will be used to easily index which expert is going to be sollicitated
-        # expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1, 0)
-
         # Loop over all available experts in the model and perform the computation on each expert
         expert_outputs = []
-        for expert_idx in _prune_expert_idxs + [60, 61, 62, 63]:
+        for expert_idx in prune_expert_idxs:
+            expert_weight = dynamic_weights[(relative_layer, expert_idx)]
             expert_layer = self.experts[expert_idx]
             expert_output = expert_layer(hidden_states)
-            expert_outputs.append(expert_output)
-            # idx, top_x = torch.where(expert_mask[expert_idx])
-
-            # # Index the correct hidden states and compute the expert hidden state for
-            # # the current expert. We need to make sure to multiply the output hidden
-            # # states by `routing_weights` on the corresponding tokens (top-1 and top-2)
-            # current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
-            # current_hidden_states = expert_layer(current_state) * routing_weights[top_x, idx, None]
-
-            # # However `index_add_` only support torch tensors for indexing so we'll use
-            # # the `top_x` tensor here.
-            # final_hidden_states.index_add_(0, top_x, current_hidden_states.to(hidden_states.dtype))
+            expert_outputs.append(expert_output*expert_weight)
+        
+        shared_expert_weight = dynamic_weights[(relative_layer, 100)]
+        shared_expert_output = self.shared_expert(hidden_states)
+        expert_outputs.append(shared_expert_output*shared_expert_weight)
 
         stacked_tensors = torch.stack(expert_outputs)
-        final_hidden_states = torch.mean(stacked_tensors, dim=0)
+        final_hidden_states = torch.sum(stacked_tensors, dim=0)
 
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
         return final_hidden_states, router_logits
@@ -950,6 +945,35 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
 
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
         return final_hidden_states, router_logits
+    
+
+    def split(self):
+        # divide shared experts
+        print("before split num experts {}".format(len(self.experts)))
+        config = self.config
+        self.divided_shared_experts = nn.ModuleList(
+            [Qwen2MoeMLP(config, intermediate_size=config.moe_intermediate_size) for _ in range(4)]
+        )
+        shared_gate_weight = self.shared_expert.gate_proj.weight.data
+        shared_up_weight = self.shared_expert.up_proj.weight.data
+        shared_down_weight = self.shared_expert.down_proj.weight.data
+        print("before split weight size:")
+        print(shared_gate_weight.size(), shared_up_weight.size(), shared_down_weight.size())
+        gate_chunks = torch.chunk(shared_gate_weight, 4, dim=0)
+        up_chunks = torch.chunk(shared_up_weight, 4, dim=0)
+        down_chunks = torch.chunk(shared_down_weight, 4, dim=1)
+        print("after split weight size:")
+        print(gate_chunks[0].size(), up_chunks[0].size(), down_chunks[0].size())
+
+        for expert, gate_w, up_w, down_w in zip(self.divided_shared_experts, gate_chunks, \
+                                                up_chunks, down_chunks):
+            with torch.no_grad():  # 禁用梯度计算
+                expert.gate_proj.weight = nn.Parameter(gate_w)
+                expert.up_proj.weight = nn.Parameter(up_w)
+                expert.down_proj.weight = nn.Parameter(down_w)
+        
+        self.experts = self.experts + self.divided_shared_experts
+        print("split shared expert to 4 expert, num expert {}".format(len(self.experts)))
 
 
 class Qwen2MoeDecoderLayer(nn.Module):
