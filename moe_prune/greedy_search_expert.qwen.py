@@ -83,7 +83,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             print(len(hidden_states))
             for each in hidden_states:
                 print(each.size())
-            exit()
+            # exit()
             layer_output = hidden_states[layer_idx]
             layer_output = layer_output.to(torch.float32)
             # print("layer output {}".format(layer_output))
@@ -178,6 +178,9 @@ model = AutoModelForCausalLM.from_pretrained(
     # dtype=eval(f'torch.{model_dtype}'),
     # no_split_module_classes=[no_split_module_classes]
 )
+
+print(model)
+exit()
 model = model.cuda()
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
