@@ -823,15 +823,15 @@ print("condense layer idx {}".format(prune_layer_idxs))
 # print("condense layer idx after mapping {}".format(prune_layer_idxs))
 
 # 层索引 to 专家索引序列
-expert_order_path = "/root/transformers/qwen_model/layer_idx_to_expert_idx.greedy_jl.json"
-layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+# expert_order_path = 
+layer_idx_to_expert_idxs = json.load(open("/root/transformers/qwen_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
 layer_idx_to_expert_idxs = {
     int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
 # 专家的动态权重
 dynamic_weights = {}
-dynamic_weights_path ="/root/transformers/qwen_model/dynamic_weight.qwen.json"
-dynamic_weight_tmp = json.load(open(dynamic_weights_path, 'r'))
+# dynamic_weights_path =
+dynamic_weight_tmp = json.load(open("/root/transformers/qwen_model/dynamic_weight.qwen.json", 'r'))
 for key, value in dynamic_weight_tmp.items():
     key = key.split("-")
     layer_idx = int(key[0])
