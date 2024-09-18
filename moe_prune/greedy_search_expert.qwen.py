@@ -51,7 +51,9 @@ def calculate_js_divergence(logits_p, logits_q):
 
 def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, add_special_tokens=True):
     model = model.eval()
-    layer_idx = moe_layer_idx + 2  # add embedding layer and ffn layer
+
+    #很重要！！！
+    layer_idx = moe_layer_idx+2# add embedding layer and ffn layer
 
     def encode_text_batch(input_strs):
         inputs = tokenizer.batch_encode_plus(
@@ -78,10 +80,7 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             outputs = model(
                 input_ids, attention_mask=attention_mask, output_hidden_states=True)
             hidden_states = outputs.hidden_states
-            if layer_idx < 23:
-                layer_output = hidden_states[layer_idx]
-            else:
-                layer_output = outputs.last_hidden_state
+            layer_output = hidden_states[layer_idx]
             layer_output = layer_output.to(torch.float32)
             # print("layer output {}".format(layer_output))
             # print("layer output size {}".format(layer_output.size()))
