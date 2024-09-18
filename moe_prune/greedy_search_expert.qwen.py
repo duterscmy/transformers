@@ -80,6 +80,10 @@ def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, 
             outputs = model(
                 input_ids, attention_mask=attention_mask, output_hidden_states=True)
             hidden_states = outputs.hidden_states
+            print(len(hidden_states))
+            for each in hidden_states:
+                print(each.size())
+            exit()
             layer_output = hidden_states[layer_idx]
             layer_output = layer_output.to(torch.float32)
             # print("layer output {}".format(layer_output))
