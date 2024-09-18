@@ -1,0 +1,1 @@
+num_route_experts=4;prune_layer_num=3
