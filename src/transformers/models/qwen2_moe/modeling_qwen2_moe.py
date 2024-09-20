@@ -793,7 +793,7 @@ QWEN2MOE_ATTENTION_CLASSES = {
 layer_num = 24
 # num_route_experts = 0
 # prune_layer_num = 9
-trim_layer_num = 0
+# trim_layer_num = 0
 condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
 
