@@ -1,1 +1,1 @@
-num_route_experts=4;prune_layer_num=3;trim_layer_num=3
+num_route_experts=4;prune_layer_num=0;trim_layer_num=3
