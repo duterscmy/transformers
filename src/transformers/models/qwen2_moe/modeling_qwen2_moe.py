@@ -802,7 +802,8 @@ if num_route_experts == 4:  # greedy search with 4 extra experts
 else:  # greedy search with only shared expert
     condense_layer_order = [11, 3, 9, 14, 18, 23, 19, 12, 20, 8, 21, 16, 15, 10, 22]
 
-layer_trim_layer_order = [11, 3, 9, 14, 18, 23, 19, 12, 20, 8, 21, 16, 15, 10, 22]
+layer_trim_layer_order = [20, 19, 18, 21, 11, 13, 17, 14, 15, 10,  9, 16, 22,  8,  4,  7,  5, 12,
+         3,  6,  2,  1,  0, 23]
 
 # get condense layer and trim layer
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
@@ -1206,6 +1207,10 @@ class Qwen2MoeModel(Qwen2MoePreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
+        global layer_num, trim_layer_idxs
+        self.layer_num = layer_num
+        self.trim_layer_idxs = trim_layer_idxs
+
     def get_input_embeddings(self):
         return self.embed_tokens
 
@@ -1315,6 +1320,13 @@ class Qwen2MoeModel(Qwen2MoePreTrainedModel):
         next_decoder_cache = None
 
         for decoder_layer in self.layers:
+            global global_layer
+            relative_layer = global_layer % self.layer_num
+            if relative_layer in self.trim_layer_idxs:
+                # print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
+                #     self.layer_num, relative_layer))
+                global_layer +=1
+                continue
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
 
