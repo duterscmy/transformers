@@ -145,3 +145,19 @@ for layer_idx in range(-1, 23):
     outputs.append(flat_layer_output)
 
 
+
+mean_cosine_sim_list = []
+for layer_idx in range(1, 25):
+    a, b = outputs[layer_idx], outputs[layer_idx-1]
+    cosine_sim = F.cosine_similarity(a, b, dim=1)
+    mean_cosine_sim = cosine_sim.mean()
+    mean_cosine_sim_list.append(mean_cosine_sim)
+
+# 将 mean_cosine_sim_list 转换为 tensor
+mean_cosine_sim_tensor = torch.tensor(mean_cosine_sim_list)
+# 取 topk 的索引和对应值
+topk_values, topk_indices = torch.topk(mean_cosine_sim_tensor, k=5)
+
+# 打印 topk 的索引
+print(f"Top k indices: {topk_indices}")
+print(f"Top k values: {topk_values}")
