@@ -70,7 +70,7 @@ parser.add_argument("--input", default="./datasets/sample_eval.json",
                     help="eval数据集路径")
 parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
-]
+
 
 args = parser.parse_args()
 batch_size = 4
