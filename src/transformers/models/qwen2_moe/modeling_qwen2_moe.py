@@ -788,7 +788,6 @@ QWEN2MOE_ATTENTION_CLASSES = {
     "sdpa": Qwen2MoeSdpaAttention,
 }
 
-global_layer = 0
 class Qwen2MoeSparseMoeBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -804,93 +803,9 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
 
         self.shared_expert = Qwen2MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
-
-    def split(self):
-        # divide shared experts
-        print("before split num experts {}".format(len(self.experts)))
-        config = self.config
-        self.divided_shared_experts = nn.ModuleList(
-            [Qwen2MoeMLP(config, intermediate_size=config.moe_intermediate_size) for _ in range(4)]
-        )
-        shared_gate_weight = self.shared_expert.gate_proj.weight.data
-        shared_up_weight = self.shared_expert.up_proj.weight.data
-        shared_down_weight = self.shared_expert.down_proj.weight.data
-        print("before split weight size:")
-        print(shared_gate_weight.size(), shared_up_weight.size(), shared_down_weight.size())
-        gate_chunks = torch.chunk(shared_gate_weight, 4, dim=0)
-        up_chunks = torch.chunk(shared_up_weight, 4, dim=0)
-        down_chunks = torch.chunk(shared_down_weight, 4, dim=1)
-        print("after split weight size:")
-        print(gate_chunks[0].size(), up_chunks[0].size(), down_chunks[0].size())
-
-        for expert, gate_w, up_w, down_w in zip(self.divided_shared_experts, gate_chunks, \
-                                                up_chunks, down_chunks):
-            with torch.no_grad():  # 禁用梯度计算
-                expert.gate_proj.weight = nn.Parameter(gate_w)
-                expert.up_proj.weight = nn.Parameter(up_w)
-                expert.down_proj.weight = nn.Parameter(down_w)
-        
-        self.experts = self.experts + self.divided_shared_experts
-        print("split shared expert to 4 expert, num expert {}".format(len(self.experts)))
-
-    def forward(self, inputs):
-        global global_layer
-        _prune_layer_idx_to_expert_idxs = prune_layer_list[-1]  # 进行剪枝的层索引
-        _layer_num = layer_num_list[-1]  # 模型的层数
-        
-
-        _relative_layer = global_layer % _layer_num
-        global_layer += 1
-        if _relative_layer in _prune_layer_idx_to_expert_idxs:
-            _prune_expert_idxs = _prune_layer_idx_to_expert_idxs[_relative_layer]
-            # print("layer_num {} current_layer {}, use PRUNE layer".format(_layer_num, global_layer))
-            output = self.forward_prune(inputs, _prune_expert_idxs, _relative_layer)
-        else:
-            # print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, global_layer))
-            output = self.forward_route(inputs)
-        return output
     
-    def forward_prune(self, hidden_states: torch.Tensor, prune_expert_idxs, relative_layer) -> torch.Tensor:
-        """ """
-        batch_size, sequence_length, hidden_dim = hidden_states.shape
-        hidden_states = hidden_states.view(-1, hidden_dim)
-        # # router_logits: (batch * sequence_length, n_experts)
-        router_logits = self.gate(hidden_states)
 
-        # routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-        # routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
-        # if self.norm_topk_prob:
-        #     routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
-        # # we cast back to the input dtype
-        # routing_weights = routing_weights.to(hidden_states.dtype)
-
-        # final_hidden_states = torch.zeros(
-        #     (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
-        # )
-
-        # One hot encode the selected experts to create an expert mask
-        # this will be used to easily index which expert is going to be sollicitated
-        # expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1, 0)
-
-        # Loop over all available experts in the model and perform the computation on each expert
-        expert_outputs = []
-        for expert_idx in prune_expert_idxs:
-            expert_weight = dynamic_weights[(relative_layer, expert_idx)]
-            expert_layer = self.experts[expert_idx]
-            expert_output = expert_layer(hidden_states)
-            expert_outputs.append(expert_output*expert_weight)
-        
-        shared_expert_weight = dynamic_weights[(relative_layer, 100)]
-        shared_expert_output = self.shared_expert(hidden_states)
-        expert_outputs.append(shared_expert_output*shared_expert_weight)
-
-        stacked_tensors = torch.stack(expert_outputs)
-        final_hidden_states = torch.sum(stacked_tensors, dim=0)
-
-        final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
-        return final_hidden_states, router_logits
-
-    def forward_route(self, hidden_states: torch.Tensor) -> torch.Tensor:
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """ """
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
@@ -1042,6 +957,8 @@ QWEN2MOE_START_DOCSTRING = r"""
     "The bare Qwen2MoE Model outputting raw hidden-states without any specific head on top.",
     QWEN2MOE_START_DOCSTRING,
 )
+
+global_layer = 0
 class Qwen2MoePreTrainedModel(PreTrainedModel):
     config_class = Qwen2MoeConfig
     base_model_prefix = "model"
