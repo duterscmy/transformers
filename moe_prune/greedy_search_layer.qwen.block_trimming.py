@@ -136,7 +136,7 @@ raw_questions = list(map(lambda x: x["text"], questions))
 
 # origin output (no prune)
 outputs = []
-for layer_idx in range(-1, 23):
+for layer_idx in range(-1, 24):
     layer_output = get_layer_output(
         model, layer_idx, tokenizer, raw_questions, batch_size=batch_size)
     layer_output = [sample_output.view(-1, sample_output.size()[-1]) for sample_output in layer_output]
