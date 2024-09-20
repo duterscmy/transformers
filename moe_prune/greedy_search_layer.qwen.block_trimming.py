@@ -76,6 +76,7 @@ args = parser.parse_args()
 batch_size = 4
 num_layer = 24
 num_expert = 60
+pytorch_checkpoint_path = args.model
 
 # @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
 available_gpu_ids_str = "0"
