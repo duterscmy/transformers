@@ -958,7 +958,7 @@ QWEN2MOE_START_DOCSTRING = r"""
     QWEN2MOE_START_DOCSTRING,
 )
 
-global_layer = 0
+
 class Qwen2MoePreTrainedModel(PreTrainedModel):
     config_class = Qwen2MoeConfig
     base_model_prefix = "model"
