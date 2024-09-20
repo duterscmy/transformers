@@ -794,9 +794,7 @@ layer_num = 24
 # num_route_experts = 0
 # prune_layer_num = 9
 # trim_layer_num = 0
-condense_layer_num = prune_layer_num - trim_layer_num
-# layer_num -= trim_layer_num
-
+condense_layer_num = prune_layer_num
 if num_route_experts == 4:  # greedy search with 4 extra experts
     condense_layer_order = [11, 9, 3, 13, 23, 18, 21, 20, 16, 10, 19, 22, 14, 4, 8]
 else:  # greedy search with only shared expert

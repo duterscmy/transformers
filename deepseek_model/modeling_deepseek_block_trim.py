@@ -1308,8 +1308,7 @@ class DeepseekModel(DeepseekPreTrainedModel):
         global layer_num, trim_layer_idxs
         self.layer_num = layer_num
         self.trim_layer_idxs = trim_layer_idxs
-        if len(self.trim_layer_idxs):
-            self.layers = [layer for idx, layer in enumerate(self.layers) if idx not in self.trim_layer_idxs]
+
         # self.trim_layer_idxs = [i+1 for i in trim_layer_idxs]  # add first ffn layer
 
         self.post_init()
@@ -1408,14 +1407,14 @@ class DeepseekModel(DeepseekPreTrainedModel):
         next_decoder_cache = None
 
         for tmp_layer_idx, decoder_layer in enumerate(self.layers):
-            # if tmp_layer_idx > 0:
-            #     global global_layer
-            #     relative_layer = global_layer % self.layer_num
-            #     if relative_layer in self.trim_layer_idxs:
-            #         # print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
-            #         #     self.layer_num, relative_layer))
-            #         global_layer +=1
-            #         continue
+            if tmp_layer_idx > 0:
+                global global_layer
+                relative_layer = global_layer % self.layer_num
+                if relative_layer in self.trim_layer_idxs:
+                    # print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
+                    #     self.layer_num, relative_layer))
+                    global_layer +=1
+                    continue
                 
             if output_hidden_states:
                 all_hidden_states += (hidden_states,)
