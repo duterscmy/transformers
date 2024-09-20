@@ -50,7 +50,7 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_qwen2_moe import Qwen2MoeConfig
-from .exp_hyper import num_route_experts, prune_layer_num
+from .exp_hyper import num_route_experts, prune_layer_num, trim_layer_num
 
 
 if is_flash_attn_2_available():
