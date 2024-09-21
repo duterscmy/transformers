@@ -7,7 +7,7 @@ import gc
 import argparse
 import numpy as np
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer,AutoConfig
 import torch
 import time
 import subprocess
