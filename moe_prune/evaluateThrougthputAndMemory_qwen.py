@@ -106,7 +106,7 @@ layer_idx_to_expert_idxs = json.load(open('/root/transformers/qwen_model/layer_i
 layer_idx_to_expert_idxs = {
     int(key): value for key, value in layer_idx_to_expert_idxs.items()}
 
-if condense_num_expert == 4:
+if prune_num_expert == 4:
     condense_layer_order = [11, 9, 3, 13, 23, 18, 21, 20, 16, 10, 19, 22, 14, 4, 8]
 else:
     condense_layer_order = [11, 3, 9, 14, 18, 23, 19, 12, 20, 8, 21, 16, 15, 10, 22]
@@ -116,10 +116,9 @@ layer_trim_layer_order = [20, 19, 18, 21, 11, 13, 17, 14, 15, 10, 9, 16, 22, 8, 
 trim_layer_idxs = layer_trim_layer_order[:layer_trim_num_layer]
 
 
-condense_layer_num = condense_num_expert
 condense_layer_order = list(
     filter(lambda x: x not in trim_layer_idxs, condense_layer_order))
-condense_layer_idxs = condense_layer_order[:condense_layer_num]
+condense_layer_idxs = condense_layer_order[:condense_num_layer]
 print("trim layer idxs :{}".format(trim_layer_idxs))
 print("condense layer idxs: {}".format(condense_layer_idxs))
 
