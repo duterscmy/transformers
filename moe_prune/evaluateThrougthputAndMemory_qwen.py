@@ -50,12 +50,50 @@ print(dataset)
 
 # Load the model and tokenizer
 # ignore_mismatched_sizes=True
+available_gpu_ids_str = "0"
+memory_per_gpu = "48GiB"  # @param ["", "38GiB"] {allow-input: true}
+cpu_memory = '80GiB'  # @param ["50GiB"] {allow-input: true}
+model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
+offload = False  # @param {type:"boolean"}
+if torch.cuda.is_available():
+    cuda_list = available_gpu_ids_str.split(',')
+else:
+    available_gpu_ids_str, memory_per_gpu = "", ""
+    model_dtype = "bfloat16"
+    cuda_list = []
+no_split_module_classes = "OpenMoeDecoderLayer"
+# 1. Allocate Devices for Inference
+available_memory = {int(cuda): memory_per_gpu for cuda in cuda_list}
+available_memory['cpu'] = cpu_memory
+print('Available Devices and Memory: ', available_memory)
+
+# 2. Load the Model (init with empty weight to save memory)
+config = AutoConfig.from_pretrained(
+    pytorch_checkpoint_path, trust_remote_code=True)
+# weights_location = snapshot_download(repo_id=pytorch_checkpoint_path)
+with init_empty_weights():
+    model = AutoModelForCausalLM.from_config(config,
+                                             torch_dtype=eval(
+                                                 f'torch.{model_dtype}'),
+                                             trust_remote_code=True)
+print('Model dtype: ', model.dtype)
+device_map = infer_auto_device_map(model,
+                                   max_memory=available_memory,
+                                   no_split_module_classes=no_split_module_classes)
+print('Inferred Device Map: \n', device_map)
+device_map = {'': 'cuda:0'}
 model = AutoModelForCausalLM.from_pretrained(
-    args.model_name, trust_remote_code=True,).half().cuda()
+    pytorch_checkpoint_path,
+    device_map=device_map,
+    torch_dtype=torch.bfloat16,
+    trust_remote_code=True,
+    ignore_mismatched_sizes=True,
+)
 tokenizer = AutoTokenizer.from_pretrained(
     args.model_name, trust_remote_code=True)
 
-print(model)
+for name,para in model.named_parameters():
+    print(name)
 exit()
 for param in model.parameters():
     param.requires_grad = False
