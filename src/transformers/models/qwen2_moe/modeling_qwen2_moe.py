@@ -877,10 +877,10 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         global_layer += 1
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = layer_idx_to_expert_idxs[relative_layer][:self.num_route_experts]
-            print("layer_num {} current_layer {}, use CONDENSE layer".format(self.layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use CONDENSE layer".format(self.layer_num, global_layer))
             output = self.forward_prune(inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(self.layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use ROUTE layer".format(self.layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
     
@@ -1062,7 +1062,7 @@ class Qwen2MoeDecoderLayer(nn.Module):
 
             hidden_states = residual + hidden_states
         else:
-            print("layer_num {} current_layer {}, use LAYER_TRIM layer".format(self.layer_num, global_layer))
+            # print("layer_num {} current_layer {}, use LAYER_TRIM layer".format(self.layer_num, global_layer))
             global_layer += 1
             router_logits = None
 
@@ -1341,8 +1341,8 @@ class Qwen2MoeModel(Qwen2MoePreTrainedModel):
             global global_layer
             relative_layer = global_layer % self.layer_num
             if relative_layer in self.block_trim_layer_idxs:
-                print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
-                    self.layer_num, relative_layer))
+                # print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
+                #     self.layer_num, relative_layer))
                 global_layer +=1
                 continue
             if output_hidden_states:
