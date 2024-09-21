@@ -877,10 +877,10 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         global_layer += 1
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = layer_idx_to_expert_idxs[relative_layer][:self.num_route_experts]
-            print("layer_num {} current_layer {}, use CONDENSE layer".format(_layer_num, global_layer))
+            print("layer_num {} current_layer {}, use CONDENSE layer".format(self.layer_num, global_layer))
             output = self.forward_prune(inputs, prune_expert_idxs, relative_layer)
         else:
-            print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, global_layer))
+            print("layer_num {} current_layer {}, use ROUTE layer".format(self.layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
     
