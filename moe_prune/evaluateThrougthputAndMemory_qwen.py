@@ -93,9 +93,6 @@ model = AutoModelForCausalLM.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(
     args.model_name, trust_remote_code=True)
 
-for name,para in model.named_parameters():
-    print(name)
-exit()
 for param in model.parameters():
     param.requires_grad = False
 
@@ -133,10 +130,10 @@ for prune_layer_idx in condense_layer_idxs:
 print(f"prune layer to expert: {prune_layer_idx_to_expert_idx}")
 
 def classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
-    '''model.layers.0.block_sparse_moe.experts.7.w1'''
+    '''model.layers.21.mlp.experts.59.down_proj.weight'''
     try:
         layer_idx = int(name.split(".")[2])
-        expert_idx = int(name.split(".")[-2])
+        expert_idx = int(name.split(".")[5])
         if layer_idx in prune_layer_idx_to_expert_idx and expert_idx not in prune_layer_idx_to_expert_idx[layer_idx]:
             return True
     except:
@@ -144,10 +141,9 @@ def classify_pruned_experts(name, prune_layer_idx_to_expert_idx):
     return False
 
 def classify_layer_trim_experts(name, trim_layer_idxs):
-    '''model.layers.0.block_sparse_moe.experts.7.w1'''
+    '''model.layers.21.mlp.shared_expert.gate_proj.weight'''
     try:
         layer_idx = int(name.split(".")[2])
-        expert_idx = int(name.split(".")[-2])
         if layer_idx in trim_layer_idxs and "experts" in name:
             return True
     except:
