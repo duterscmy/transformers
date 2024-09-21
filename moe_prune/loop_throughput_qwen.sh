@@ -11,6 +11,6 @@ for prune_expert_num in 0 4;do
           --model_name ../autodl-tmp/qwen_model/qwen/Qwen1___5-MoE-A2___7B/ \
           --prune-num-expert ${prune_expert_num} \
           --condense-num-layer ${prune_layer_num} \
-          --layer-trim-num-layer 0 > $eval.log
+          --layer-trim-num-layer 0 > $eval_log
     done
 done
