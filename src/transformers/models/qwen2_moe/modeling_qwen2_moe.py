@@ -818,6 +818,14 @@ prune_layer_idxs = condense_layer_order[:condense_layer_num]
 
 print("trim layer idx {}".format(trim_layer_idxs))
 print("condense layer idx {}".format(prune_layer_idxs))
+
+trim_type="layer_trim"
+if trim_type == "layer_trim":
+    block_trim_layer_idxs = []
+    layer_trim_layer_idxs = trim_layer_idxs
+elif trim_type == "block_trim":
+    block_trim_layer_idxs = trim_layer_idxs
+    layer_trim_layer_idxs = []
 # print("layer idx map after trimming{}".format(layer_map_trim))
 # prune_layer_idxs = list(map(lambda x: layer_map_trim[x], prune_layer_idxs))
 # print("condense layer idx after mapping {}".format(prune_layer_idxs))
@@ -869,10 +877,10 @@ class Qwen2MoeSparseMoeBlock(nn.Module):
         global_layer += 1
         if relative_layer in self.prune_layer_idxs:
             prune_expert_idxs = layer_idx_to_expert_idxs[relative_layer][:self.num_route_experts]
-            # print("layer_num {} current_layer {}, use PRUNE layer".format(_layer_num, global_layer))
+            print("layer_num {} current_layer {}, use CONDENSE layer".format(_layer_num, global_layer))
             output = self.forward_prune(inputs, prune_expert_idxs, relative_layer)
         else:
-            # print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, global_layer))
+            print("layer_num {} current_layer {}, use ROUTE layer".format(_layer_num, global_layer))
             output = self.forward_route(inputs)
         return output
     
@@ -993,6 +1001,10 @@ class Qwen2MoeDecoderLayer(nn.Module):
         self.input_layernorm = Qwen2MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen2MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
+        global layer_trim_layer_idxs, layer_num
+        self.layer_trim_layer_idxs = layer_trim_layer_idxs
+        self.layer_num = layer_num
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -1036,16 +1048,24 @@ class Qwen2MoeDecoderLayer(nn.Module):
         hidden_states = residual + hidden_states
 
         # Fully Connected
-        residual = hidden_states
-        hidden_states = self.post_attention_layernorm(hidden_states)
+        global global_layer
+        relative_layer = global_layer % self.layer_num
+        if relative_layer not in self.layer_trim_layer_idxs:
+            residual = hidden_states
+            hidden_states = self.post_attention_layernorm(hidden_states)
 
-        hidden_states = self.mlp(hidden_states)
-        if isinstance(hidden_states, tuple):
-            hidden_states, router_logits = hidden_states
+            hidden_states = self.mlp(hidden_states)
+            if isinstance(hidden_states, tuple):
+                hidden_states, router_logits = hidden_states
+            else:
+                router_logits = None
+
+            hidden_states = residual + hidden_states
         else:
+            print("layer_num {} current_layer {}, use LAYER_TRIM layer".format(self.layer_num, global_layer))
+            global_layer += 1
             router_logits = None
 
-        hidden_states = residual + hidden_states
 
         outputs = (hidden_states,)
 
@@ -1205,9 +1225,9 @@ class Qwen2MoeModel(Qwen2MoePreTrainedModel):
         # Initialize weights and apply final processing
         self.post_init()
 
-        global layer_num, trim_layer_idxs
+        global layer_num, block_trim_layer_idxs
         self.layer_num = layer_num
-        self.trim_layer_idxs = trim_layer_idxs
+        self.block_trim_layer_idxs = block_trim_layer_idxs
 
     def get_input_embeddings(self):
         return self.embed_tokens
@@ -1320,9 +1340,9 @@ class Qwen2MoeModel(Qwen2MoePreTrainedModel):
         for decoder_layer in self.layers:
             global global_layer
             relative_layer = global_layer % self.layer_num
-            if relative_layer in self.trim_layer_idxs:
-                # print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
-                #     self.layer_num, relative_layer))
+            if relative_layer in self.block_trim_layer_idxs:
+                print("layer_num {} current_layer {}, BLOCK_TRIM layer".format(
+                    self.layer_num, relative_layer))
                 global_layer +=1
                 continue
             if output_hidden_states:
