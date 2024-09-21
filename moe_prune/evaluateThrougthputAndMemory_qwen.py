@@ -7,7 +7,8 @@ import gc
 import argparse
 import numpy as np
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer,AutoConfig
+from accelerate import infer_auto_device_map, init_empty_weights, load_checkpoint_and_dispatch
+from transformers import AutoTokenizer, T5Tokenizer, AutoConfig, AutoModelForCausalLM
 import torch
 import time
 import subprocess
