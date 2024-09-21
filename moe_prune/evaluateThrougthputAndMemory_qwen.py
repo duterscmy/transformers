@@ -36,7 +36,7 @@ parser.add_argument("--condense-num-layer", default=9, type=int,
 parser.add_argument("--layer-trim-num-layer", default=9, type=int,
                     help="layer trim层数")
 args = parser.parse_args()
-
+pytorch_checkpoint_path = args.model_name
 prune_num_expert = args.prune_num_expert
 condense_num_layer = args.condense_num_layer
 layer_trim_num_layer = args.layer_trim_num_layer
