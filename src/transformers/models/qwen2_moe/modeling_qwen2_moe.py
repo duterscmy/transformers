@@ -819,7 +819,7 @@ prune_layer_idxs = condense_layer_order[:condense_layer_num]
 print("trim layer idx {}".format(trim_layer_idxs))
 print("condense layer idx {}".format(prune_layer_idxs))
 
-trim_type="layer_trim"
+trim_type="block_trim"
 if trim_type == "layer_trim":
     block_trim_layer_idxs = []
     layer_trim_layer_idxs = trim_layer_idxs
