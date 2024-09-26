@@ -168,7 +168,7 @@ print_trainable_parameters(model)
 # finetune
 # 加载数据集
 dataset = load_dataset('json', data_files=[
-                       args.input])
+                       args.input], field='instances')
 c4_dataset = load_dataset('json', data_files=[
                        'datasets/c4-train.00000-of-01024.1w.json'])
 eval_dataset = load_dataset(
