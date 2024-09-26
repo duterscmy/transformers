@@ -31,6 +31,8 @@ from utils import print_trainable_parameters, \
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
+parser.add_argument("--input-name", default="",
+                    help="finetune data name")
 parser.add_argument("--model", default="./deepseek",
                     help="预训练模型路径")
 parser.add_argument("--output-dir", default="/root/autodl-tmp/deepseek-ai",
