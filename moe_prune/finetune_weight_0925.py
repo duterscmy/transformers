@@ -31,6 +31,8 @@ from utils import print_trainable_parameters, \
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
+parser.add_argument("--input-name", default="",
+                    help="finetune data name")
 parser.add_argument("--model", default="./deepseek",
                     help="预训练模型路径")
 parser.add_argument("--output-dir", default="/root/autodl-tmp/deepseek-ai",
@@ -65,6 +67,7 @@ num_expert = args.num_expert
 prune_num_expert = args.prune_num_expert
 prune_num_layer = args.prune_num_layer
 output_dir = args.output_dir
+input_name = args.input_name
 
 
 available_gpu_ids_str = "0"
@@ -193,8 +196,8 @@ c4_tokenized_datasets = c4_dataset.map(
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
-output_file = "finetune_all_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
-    score_mode, prune_num_layer, prune_num_expert, max_length, max_lr)
+output_file = "{}_finetune_all_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
+    input_name,score_mode, prune_num_layer, prune_num_expert, max_length, max_lr)
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
@@ -224,7 +227,7 @@ output_path = os.path.join(output_dir, output_file)
 
 training_args = TrainingArguments(
     output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
-    overwrite_output_dir=True,               # 覆盖输出文件夹
+    overwrite_output_dir=False,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
     save_steps=1000000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
