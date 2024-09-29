@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 
-def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
+def compute_ppl(model, tokenizer, input_strs, gen_kwargs=None,
                 add_special_tokens=True, split_special_tokens=False, output_only=True, verbose=False):
 
     model = model.eval()
