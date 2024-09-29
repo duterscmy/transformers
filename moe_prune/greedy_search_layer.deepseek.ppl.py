@@ -24,14 +24,19 @@ def compute_ppl(model, tokenizer, input_strs, gen_kwargs,
     model = model.eval()
 
     # Tokenization
-    def encode_text_batch(input_strs):input_strs,
+    def encode_text_batch(input_strs):
+        inputs = tokenizer.batch_encode_plus(
+            input_strs,
             padding='longest',
             add_special_tokens=add_special_tokens,
             return_tensors="pt",
             max_length=256,
-            truncation=True)
+            truncation=True
+        )
         input_ids = inputs.input_ids.to(model.device)
         attention_mask = inputs.attention_mask.to(model.device)
+        # print("input_ids {}".format(input_ids))
+        # print("attention mask {}".format(attention_mask))
         return input_ids
 
     batch_size = 8  # 批处理大小
