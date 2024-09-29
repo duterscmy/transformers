@@ -470,15 +470,15 @@ class DeepseekMoE(nn.Module):
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-        elif self.score_mode == "greedy_jl" or self.score_mode == "block_trimming":
-            expert_order_path = os.path.join(
-                current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
-            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
-            layer_idx_to_expert_idxs = {
-                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
         elif self.score_mode == "greedy_jl_c4":
             expert_order_path = os.path.join(
                 current_dir, "layer_idx_to_expert_idx.greedy_jl.c4.json")
+            layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
+            layer_idx_to_expert_idxs = {
+                int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+        else:
+            expert_order_path = os.path.join(
+                current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
             layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
             layer_idx_to_expert_idxs = {
                 int(key): value for key, value in layer_idx_to_expert_idxs.items()}
