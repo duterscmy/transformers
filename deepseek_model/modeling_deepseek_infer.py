@@ -442,6 +442,10 @@ class DeepseekMoE(nn.Module):
                 self.prune_layer_order = [19, 10, 14, 23, 7, 12, 6, 1, 24, 15, 21, 17, 9, 26, 22]
         elif self.score_mode == "greedy_jl_c4":
             self.prune_layer_order =[ 19, 6, 22, 15, 12, 9, 26, 18, 20, 23, 11, 3, 16, 24, 8]
+        elif self.score_mode == "greedy_kl":
+            self.prune_layer_order = [6, 19, 15, 22, 10, 18, 12, 26, 9, 23, 14, 21, 0, 24, 11]
+        elif self.score_mode == "greedy_ppl":
+            self.prune_layer_order = [25, 24, 7, 20, 1, 16, 12, 19, 6, 15, 10, 9, 18, 13, 2]
         # 确定剪枝的层
         self.prune_layer_idxs = self.prune_layer_order[:self.prune_layer_num]
 
