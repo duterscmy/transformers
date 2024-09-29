@@ -25,6 +25,8 @@ def calculate_kl_divergence(probs_p, probs_q):
     :param probs_q: 近似分布的概率分布 (形状：[N, D])
     :return: KL散度
     """
+    probs_p = F.softmax(probs_p, dim=-1)  # 将logits转化为概率分布
+    probs_q = F.softmax(probs_q, dim=-1)  # 将logits转化为概率分布
     epsilon = 1e-10
     probs_p = probs_p + epsilon
     probs_q = probs_q + epsilon
@@ -32,23 +34,6 @@ def calculate_kl_divergence(probs_p, probs_q):
     kl_div = F.kl_div(probs_q.log(), probs_p, reduction='batchmean')  # 计算KL散度
     return kl_div
 
-
-def calculate_js_divergence(logits_p, logits_q):
-    """
-    计算两个分布之间的Jensen-Shannon散度
-    :param logits_p: 真实分布的logits (形状：[N, D])
-    :param logits_q: 近似分布的logits (形状：[N, D])
-    :return: JS散度
-    """
-    p = F.softmax(logits_p, dim=-1)  # 将logits转化为概率分布
-    q = F.softmax(logits_q, dim=-1)  # 将logits转化为概率分布
-    # print("p {}, q {}".format(p, q))
-    m = 0.5 * (p + q)
-    kl_pm = calculate_kl_divergence(p, m)
-    kl_qm = calculate_kl_divergence(q, m)
-    js_div = 0.5 * (kl_pm + kl_qm)
-    # print("kl per sample {} {} {}".format(kl_pm, kl_qm, js_div))
-    return js_div
 
 
 def get_layer_output(model, moe_layer_idx, tokenizer, input_strs, batch_size=1, add_special_tokens=True):
