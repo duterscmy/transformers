@@ -181,10 +181,14 @@ print_trainable_parameters(model)
 
 # finetune
 # 加载数据集
-dataset = load_dataset('json', data_files=[
-                       args.input], field='instances')
+try:
+    dataset = load_dataset('json', data_files=[
+                        args.input], field='instances')
+except:
+    dataset = load_dataset('json', data_files=[
+                       args.input])
 c4_dataset = load_dataset('json', data_files=[
-                       'datasets/c4-train.00000-of-01024.1w.json'])
+                       'datasets/c4-train.00000-of-01024.100.json'])
 eval_dataset = load_dataset(
     'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
@@ -207,8 +211,6 @@ c4_tokenized_datasets = c4_dataset.map(
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
-output_file = "finetune_all_score_mode_{}_layer_{}_expert{}_ml{}_lr{}".format(
-    score_mode, prune_num_layer, prune_num_expert, max_length, max_lr)
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
@@ -232,12 +234,8 @@ def get_custom_schedule_with_warmup(optimizer: Optimizer, num_warmup_steps: int,
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
-writer = SummaryWriter(log_dir=os.path.join(
-    output_dir, output_file, "run_log"))
-output_path = os.path.join(output_dir, output_file)
-
 training_args = TrainingArguments(
-    output_dir=output_path,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
+    output_dir=output_dir,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
     per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
@@ -277,6 +275,10 @@ trainer = Trainer(
     optimizers=(optimizer, scheduler)
 )
 trainer.train()
+
+# 删除c4 ft model
+rm_ft_model_cmd = "rm -r {}/checkpoint*".format(output_dir)
+os.system(rm_ft_model_cmd)
 
 #######SFT#######
 # Calculate total training steps
