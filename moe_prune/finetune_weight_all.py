@@ -248,7 +248,7 @@ training_args = TrainingArguments(
     warmup_ratio=0.2,
     # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     # eval_strategy="steps",
-    logging_dir=os.path.join(output_dir, output_file, "run_log")
+    logging_dir=os.path.join(output_dir, "run_log")
     # 注意：其他参数可以根据需要进行调整
 )
 
