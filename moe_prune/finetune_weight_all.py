@@ -29,7 +29,9 @@ from utils import print_trainable_parameters, \
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
+parser.add_argument("--sft-input", default="datasets/c4-train.00000-of-01024.1w.json",
+                    help="finetune data")
+parser.add_argument("--ft-input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
 parser.add_argument("--input-name", default="",
                     help="finetune data name")
@@ -195,6 +197,13 @@ eval_dataset = load_dataset(
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 
+def tokenize_function_c4(examples):
+    x = tokenizer(examples['text'], padding="max_length",
+                  truncation=True, max_length=256, return_tensors="pt")
+    # Ensure labels are the same as input_ids and convert to FP32
+    x["labels"] = x["input_ids"].clone()
+    return x
+
 def tokenize_function(examples):
     x = tokenizer(examples['text'], padding="max_length",
                   truncation=True, max_length=max_length, return_tensors="pt")
@@ -207,7 +216,7 @@ def tokenize_function(examples):
 tokenized_datasets = dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 c4_tokenized_datasets = c4_dataset.map(
-    tokenize_function, batched=True, remove_columns=["text"])
+    tokenize_function_c4, batched=True, remove_columns=["text"])
 eval_tokenized_datasets = eval_dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 
@@ -234,11 +243,12 @@ def get_custom_schedule_with_warmup(optimizer: Optimizer, num_warmup_steps: int,
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
 
+######C4######
 training_args = TrainingArguments(
     output_dir=output_dir,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
     overwrite_output_dir=True,               # 覆盖输出文件夹
     num_train_epochs=1,                      # 训练轮数
-    per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
+    per_device_train_batch_size=8,           # 每个设备的batch大小
     save_steps=1000000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
@@ -251,8 +261,6 @@ training_args = TrainingArguments(
     logging_dir=os.path.join(output_dir, "run_log")
     # 注意：其他参数可以根据需要进行调整
 )
-
-######C4######
 # Calculate total training steps
 num_training_steps = len(
     c4_tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
@@ -280,7 +288,25 @@ trainer.train()
 rm_ft_model_cmd = "rm -r {}/checkpoint*".format(output_dir)
 os.system(rm_ft_model_cmd)
 
+
 #######SFT#######
+training_args = TrainingArguments(
+    output_dir=output_dir,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
+    overwrite_output_dir=True,               # 覆盖输出文件夹
+    num_train_epochs=1,                      # 训练轮数
+    per_device_train_batch_size=args.batch_size,           # 每个设备的batch大小
+    save_steps=1000000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    save_strategy="steps",
+    save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
+    logging_steps=5,                        # 日志记录的步数
+    learning_rate=max_lr,
+    # lr_scheduler_type="cosine",
+    warmup_ratio=0.1,
+    # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+    # eval_strategy="steps",
+    logging_dir=os.path.join(output_dir, "run_log")
+    # 注意：其他参数可以根据需要进行调整
+)
 # Calculate total training steps
 num_training_steps = len(
     tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
@@ -305,5 +331,4 @@ trainer = Trainer(
     optimizers=(optimizer, scheduler)
 )
 trainer.train()
-
-tokenizer.save_pretrained(output_path)  
+tokenizer.save_pretrained(output_dir)  
