@@ -29,9 +29,7 @@ from utils import print_trainable_parameters, \
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--sft-input", default="datasets/c4-train.00000-of-01024.1w.json",
-                    help="finetune data")
-parser.add_argument("--ft-input", default="datasets/c4-train.00000-of-01024.1w.json",
+parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
 parser.add_argument("--input-name", default="",
                     help="finetune data name")
