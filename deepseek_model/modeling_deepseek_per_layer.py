@@ -396,8 +396,10 @@ layer_num = 27
 # prune_layer_idx = 0
 # prune_type = "layer_trim"
 tmp_prune_layer_idxs = [prune_layer_idx]
+prune_layer_idxs, trim_layer_idxs = [], []
 if prune_type == "layer_trim":
     trim_layer_idxs = tmp_prune_layer_idxs
+    
 elif prune_type == "condense":
     prune_layer_idxs = tmp_prune_layer_idxs
 
