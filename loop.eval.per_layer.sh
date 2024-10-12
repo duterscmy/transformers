@@ -10,7 +10,7 @@ prune_type="condense"
 for prune_expert_num in 0 6;do
   for prune_layer_num in 0 26 7 12 19 20 22 23; do
     eval_log=eval.per_layer.${prune_type}.e${prune_expert_num}.l${prune_layer_num}.batch8.log
-    hyper="prune_layer_idx=${prune_layer_num};num_route_experts=${prune_expert_num};prune_type=${prune_type}"
+    hyper="prune_layer_idx=${prune_layer_num};num_route_experts=${prune_expert_num};prune_type=\"${prune_type}\""
     echo $hyper
     echo $hyper > $hyper_file
 
