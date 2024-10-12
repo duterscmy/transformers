@@ -39,7 +39,7 @@ request_memory   = 40G
 # Resources
 
 #This job will complete in less than 1 hour
-+JobRunTime = 3600*32
++JobRunTime = 32
 
 #This job can checkpoint
 +CanCheckpoint = false
