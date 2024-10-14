@@ -26,7 +26,7 @@ error  = c$(cluster).p$(process).error
 # File Transfer, Input, Output
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-transfer_input_files = /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.1w.json, /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/mmlu.json
+transfer_input_files = /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.1w.json,/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/mmlu.json
 # -------------------------------------
 # Requirements for the Job
 request_GPUs     = 1
