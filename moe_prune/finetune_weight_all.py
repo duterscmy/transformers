@@ -30,6 +30,8 @@ from utils import print_trainable_parameters, \
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="datasets/c4-train.00000-of-01024.1w.json",
                     help="finetune data")
+parser.add_argument("--c4-input", default="datasets/c4-train.00000-of-01024.1w.json",
+                    help="finetune data")
 parser.add_argument("--input-name", default="",
                     help="finetune data name")
 parser.add_argument("--model", default="./deepseek",
@@ -189,9 +191,9 @@ except:
     dataset = load_dataset('json', data_files=[
                        args.input])
 c4_dataset = load_dataset('json', data_files=[
-                       'datasets/c4-train.00000-of-01024.1w.json'])
-eval_dataset = load_dataset(
-    'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
+                       args.c4_input])
+# eval_dataset = load_dataset(
+#     'json', data_files=["datasets/sample_questions_from_6_dataset.json"])
 
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
