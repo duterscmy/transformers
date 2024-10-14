@@ -218,8 +218,8 @@ tokenized_datasets = dataset.map(
     tokenize_function, batched=True, remove_columns=["text"])
 c4_tokenized_datasets = c4_dataset.map(
     tokenize_function_c4, batched=True, remove_columns=["text"])
-eval_tokenized_datasets = eval_dataset.map(
-    tokenize_function, batched=True, remove_columns=["text"])
+# eval_tokenized_datasets = eval_dataset.map(
+#     tokenize_function, batched=True, remove_columns=["text"])
 
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
