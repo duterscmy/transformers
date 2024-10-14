@@ -431,7 +431,8 @@ print("condense layer idx {}".format(prune_layer_idxs))
 # print("condense layer idx after mapping {}".format(prune_layer_idxs))
 
 # 层索引 to 专家索引序列
-current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
+# current_dir = "/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base"
+current_dir = '/mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base'
 expert_order_path = os.path.join(
     current_dir, "layer_idx_to_expert_idx.greedy_jl.json")
 layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
