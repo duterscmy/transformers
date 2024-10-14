@@ -47,7 +47,7 @@ request_memory   = 10G
 
 
 arguments = $(script) --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/mmlu.json \
-        --c4-input --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.1w.json \
+        --c4-input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.1w.json \
         --model /mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base \
         --output-dir /mnt/fast/nobackup/scratch4weeks/ly0008/caomingyu \
         --max-length 2048 \
