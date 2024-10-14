@@ -21,7 +21,6 @@ import json
 import time
 
 from transformers.models.qwen2_moe.expert_idx import *
-from config import get_layer_idx_order, dynamic_weights, get_layer_idx_to_expert_idx
 from utils import print_trainable_parameters, \
     classify_shared_experts, \
     classify_remained_experts, \
@@ -118,9 +117,20 @@ tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 
 
 # prune layer idx and expert idx
-layer_idx_to_expert_idxs = get_layer_idx_to_expert_idx(score_mode)
-layer_idx_list_ppl_order = get_layer_idx_order(prune_num_expert, score_mode)
-
+layer_idx_to_expert_idxs = json.load(
+            open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
+layer_idx_to_expert_idxs = {
+    int(key): value for key, value in layer_idx_to_expert_idxs.items()}
+layer_idx_list_ppl_order = [19, 15, 22, 10,
+                                    12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9] 
+dynamic_weights = {}
+dynamic_weight_tmp = json.load(open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json"))
+for key, value in dynamic_weight_tmp.items():
+    key = key.split("-")
+    layer_idx = int(key[0])
+    expert_idx = int(key[1])
+    w = value[-1]
+    dynamic_weights[(layer_idx, expert_idx)] = w
 
 prune_layer_idx_to_expert_idx = {}
 for prune_layer_idx in layer_idx_list_ppl_order[:prune_num_layer]:
@@ -154,15 +164,6 @@ for name, module in model.named_modules():
 print("set {} modules to empty".format(num_prune_module))
 print_trainable_parameters(model)
 
-# load static dynamic weights
-dynamic_weights = {}
-dynamic_weight_tmp = json.load(open("deepseek_model/dynamic_weight.json", 'r'))
-for key, value in dynamic_weight_tmp.items():
-    key = key.split("-")
-    layer_idx = int(key[0])
-    expert_idx = int(key[1])
-    w = value[-1]
-    dynamic_weights[(layer_idx, expert_idx)] = w
 
 # for layer_idx, layer in enumerate(model.model.layers):
 #     if layer_idx == 0:
