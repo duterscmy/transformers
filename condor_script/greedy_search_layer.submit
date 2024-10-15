@@ -1,0 +1,59 @@
+####################
+#
+# Example Job for HTCondor
+#
+####################
+
+#---------------------------------------------
+# Name your batch so it's easy to distinguish in the q.
+JobBatchName = "sft_a100"
+
+# --------------------------------------------
+# Executable and its arguments
+executable    = /mnt/fast/nobackup/users/ly0008/miniconda3/envs/moe_condense/bin/python
+
+# ---------------------------------------------------
+# Universe (vanilla, docker)
+universe         = vanilla
+
+# -------------------------------------------------
+# Event, out and error logs
+batch=8
+log    = greedy_expert_bz$(batch).c$(cluster).p$(process).log
+output = greedy_expert_bz$(batch).c$(cluster).p$(process).out
+error  = greedy_expert_bz$(batch).c$(cluster).p$(process).error
+
+# -----------------------------------
+# File Transfer, Input, Output
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.100.json,/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json
+# -------------------------------------
+# Requirements for the Job
+request_GPUs     = 1
+requirements = (GPUs >= 1) && (CUDAGlobalMemoryMb >= 78000) && (CUDACapability >= 6.0)
+# this needs to be specified for the AI@Surrey cluster if requesting a GPU
++GPUMem          = 78000
+request_CPUs     = 1
+request_memory   = 10G
+
+# --------------------------------------
+# Resources
+
+#This job will complete in less than 1 hour
++JobRunTime = 1
+
+#This job can checkpoint
++CanCheckpoint = false
+
+
+arguments = $(script) --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.100.json \
+        --model /mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base \
+        --output /mnt/fast/nobackup/users/ly0008/caomingyu/transformers \
+        --greedy-expert-file /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.json \
+        --batch-size $(batch)
+
+
+script = $ENV(PWD)/moe_prune/greedy_search_layer.py
+
+queue 1

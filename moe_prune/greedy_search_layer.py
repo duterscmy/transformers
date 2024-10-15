@@ -208,19 +208,19 @@ if num_prune_expert == 0:
     layer_idx_to_expert_idxs = {idx: [] for idx in range(27)}
 elif prune_expert_strategy == "greedy_jl":
     layer_idx_to_expert_idxs = json.load(
-        open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
+        open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value[:num_prune_expert] for key, value in layer_idx_to_expert_idxs.items()}
 elif prune_expert_strategy == "greedy_jl_c4":
     layer_idx_to_expert_idxs = json.load(
-        open("deepseek_model/layer_idx_to_expert_idx.greedy_jl.c4.json", 'r'))
+        open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.greedy_jl.c4.json", 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value[:num_prune_expert] for key, value in layer_idx_to_expert_idxs.items()}
 
 if prune_expert_strategy == "greedy_jl":
-    dynamic_weight_file = "deepseek_model/dynamic_weight.json"
+    dynamic_weight_file = "/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json"
 elif prune_expert_strategy == "greedy_jl_c4":
-    dynamic_weight_file = "deepseek_model/dynamic_weight.c4.json"
+    dynamic_weight_file = "/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.c4.json"
 dynamic_weight_tmp = json.load(open(dynamic_weight_file, 'r'))
 for key, value in dynamic_weight_tmp.items():
     key = key.split("-")
@@ -244,7 +244,7 @@ print("compute origin layer output cost {}".format(e-s))
 # prune
 
 beam_size = 1
-max_greedy_layer_num = 15
+max_greedy_layer_num = 26
 beam_prune_layer_idx_list = [[]]
 # prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
 # no_prune_list = [0, 8, 11, 13, 16, 20, 25 ,26]
