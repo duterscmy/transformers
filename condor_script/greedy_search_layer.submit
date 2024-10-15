@@ -18,10 +18,10 @@ universe         = vanilla
 
 # -------------------------------------------------
 # Event, out and error logs
-batch=8
-log    = greedy_expert_bz$(batch).c$(cluster).p$(process).log
-output = greedy_expert_bz$(batch).c$(cluster).p$(process).out
-error  = greedy_expert_bz$(batch).c$(cluster).p$(process).error
+batch=256
+log    = greedy_layer_bz$(batch).c$(cluster).p$(process).log
+output = greedy_layer_bz$(batch).c$(cluster).p$(process).out
+error  = greedy_layer_bz$(batch).c$(cluster).p$(process).error
 
 # -----------------------------------
 # File Transfer, Input, Output
@@ -49,7 +49,6 @@ request_memory   = 10G
 
 arguments = $(script) --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.100.json \
         --model /mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base \
-        --output /mnt/fast/nobackup/users/ly0008/caomingyu/transformers \
         --greedy-expert-file /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.json \
         --batch-size $(batch)
 
