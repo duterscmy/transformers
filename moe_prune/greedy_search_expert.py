@@ -102,7 +102,7 @@ def get_total_js_divergence(origin_layer_outputs, prune_layer_outputs):
         js_div_sum, len(origin_layer_outputs), mean_js_div))
     return mean_js_div
 
-start_time = time.time()
+global_start_time = time.time()
 parser = argparse.ArgumentParser()
 parser.add_argument("--input", default="./datasets/sample_eval.json",
                     help="eval数据集路径")
@@ -274,4 +274,4 @@ except Exception as e:
     print("error: {}, {}".format(e, msg))
 
 end_time  = time.time()
-print("greedy search expert batchsize {} for one layer cost: {} seconds".format(batch_size, end_time-start_time))
+print("greedy search expert batchsize {} for one layer cost: {} seconds".format(batch_size, end_time-global_start_time))
