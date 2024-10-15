@@ -47,7 +47,7 @@ request_memory   = 10G
 +CanCheckpoint = false
 
 
-arguments = $(script) --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.100.json.json \
+arguments = $(script) --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.100.json \
         --model /mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base \
         --output /mnt/fast/nobackup/users/ly0008/caomingyu/transformers \
         --dynamic-weight-file /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json \
