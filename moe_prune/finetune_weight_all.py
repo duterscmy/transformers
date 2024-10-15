@@ -123,8 +123,12 @@ layer_idx_to_expert_idxs = json.load(
             open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
 layer_idx_to_expert_idxs = {
     int(key): value for key, value in layer_idx_to_expert_idxs.items()}
-layer_idx_list_ppl_order = [19, 15, 22, 10,
-                                    12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9] 
+if prune_num_expert == 6:
+    layer_idx_list_ppl_order = [19, 15, 22, 10,
+                                        12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+else:
+    layer_idx_list_ppl_order = [19, 12, 7, 23, 10, 14,
+                                    1, 24, 17, 15, 9, 21, 18, 6, 26]
 dynamic_weights = {}
 dynamic_weight_tmp = json.load(open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json"))
 for key, value in dynamic_weight_tmp.items():
