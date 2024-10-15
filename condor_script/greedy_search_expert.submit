@@ -1,0 +1,61 @@
+####################
+#
+# Example Job for HTCondor (Batch Size Variants)
+#
+####################
+
+#---------------------------------------------
+# Name your batch so it's easy to distinguish in the q.
+JobBatchName = "sft_a100"
+
+# --------------------------------------------
+# Executable and its arguments
+executable    = /mnt/fast/nobackup/users/ly0008/miniconda3/envs/moe_condense/bin/python
+
+# ---------------------------------------------------
+# Universe (vanilla, docker)
+universe         = vanilla
+
+# -----------------------------------
+# File Transfer, Input, Output
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.1w.json,/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json
+
+# -------------------------------------
+# Requirements for the Job
+request_GPUs     = 1
+requirements = (GPUs >= 1) && (CUDAGlobalMemoryMb >= 78000) && (CUDACapability >= 6.0)
++GPUMem          = 78000
+request_CPUs     = 1
+request_memory   = 10G
+
+# --------------------------------------
+# Resources
+
+# This job will complete in less than 1 hour
++JobRunTime = 1
+
+# This job can checkpoint
++CanCheckpoint = false
+
+# Loop over different batch sizes
+batch_sizes = 8,16,32,64
+script = $ENV(PWD)/moe_prune/greedy_search_expert.py
+
+# Loop to submit jobs for each batch size
+foreach batch_size in $(batch_sizes)
+{
+    # Event, out, and error logs for each batch size
+    log    = greedy_expert_bs$(batch_size).c$(cluster).p$(process).log
+    output = greedy_expert_bs$(batch_size).c$(cluster).p$(process).out
+    error  = greedy_expert_bs$(batch_size).c$(cluster).p$(process).error
+
+    arguments = $(script) --input /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.100.json.json \
+        --model /mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base \
+        --output /mnt/fast/nobackup/users/ly0008/caomingyu/transformers \
+        --dynamic-weight-file /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json \
+        --batch-size $(batch_size)
+
+    queue 1
+}
