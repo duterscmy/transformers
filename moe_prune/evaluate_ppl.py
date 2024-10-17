@@ -98,14 +98,14 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 # read benchmark
-try:
-    dataset = load_dataset('json', data_files=[
-                        args.input], field='instances')
-except:
-    dataset = load_dataset('json', data_files=[
-                       args.input])
-
-raw_questions = dataset["text"]
+raw_questions = []
+with open(args.input, "r") as fp:
+    for line in fp:
+        line = line.strip()
+        if line:
+            dic = json.loads(line)
+            raw_questions.append(dic["text"])
+print(len(raw_questions))
 mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
 
 print("mean ppl: {}".format(mean_ppl))
