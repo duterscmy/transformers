@@ -11,7 +11,7 @@ for prune_expert_num in 6;do
     echo $hyper > $hyper_file
 
     # 提交任务并等待结束
-    job_id=$(condor_submit eval_boolq.submit | grep -oE '[0-9]+\.[0-9]+')
+    job_id=$(condor_submit condor_script/eval_8dataset.submit | grep -oE '[0-9]+\.[0-9]+')
     echo "Submitted first job with ID: $job_id"
 
     # 使用 condor_wait 等待第一个任务完成
