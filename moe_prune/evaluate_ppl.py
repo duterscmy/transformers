@@ -57,7 +57,7 @@ args = parser.parse_args()
 pytorch_checkpoint_path = args.model
 # @param ["", "0", "0,1", "0,1,2"] {allow-input: true}
 available_gpu_ids_str = "0"
-memory_per_gpu = "38GiB"  # @param ["", "38GiB"] {allow-input: true}
+memory_per_gpu = "80GiB"  # @param ["", "38GiB"] {allow-input: true}
 cpu_memory = '50GiB'  # @param ["50GiB"] {allow-input: true}
 model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
 offload = False  # @param {type:"boolean"}
@@ -94,21 +94,17 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map=device_map,
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
-    # offload_folder="offload",
-    # offload_state_dict=True,
-    # dtype=eval(f'torch.{model_dtype}'),
-    # no_split_module_classes=[no_split_module_classes]
 )
 tokenizer = AutoTokenizer.from_pretrained(pytorch_checkpoint_path)
 # read benchmark
-with open(args.input, 'r') as fp:
-    questions = []
-    for line in fp:
-        line = line.strip()
-        if line:
-            question = json.loads(line)
-            questions.append(question)
-raw_questions = list(map(lambda x: x["turns"][0], questions))
+try:
+    dataset = load_dataset('json', data_files=[
+                        args.input], field='instances')
+except:
+    dataset = load_dataset('json', data_files=[
+                       args.input])
 
-for _ in range(10):
-    mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+raw_questions = dataset["text"]
+mean_ppl = compute_ppl(model, tokenizer, raw_questions, None)
+
+print("mean ppl: {}".format(mean_ppl))
