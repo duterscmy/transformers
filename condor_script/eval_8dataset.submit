@@ -18,9 +18,9 @@ universe         = vanilla
 
 # -------------------------------------------------
 # Event, out and error logs
-log    = c$(cluster).log
-output = c$(cluster).out
-error  = c$(cluster).error
+log    = eval_commonsense.c$(cluster).log
+output = eval_commonsense.c$(cluster).out
+error  = eval_commonsense.c$(cluster).error
 
 # -----------------------------------
 # File Transfer, Input, Output
