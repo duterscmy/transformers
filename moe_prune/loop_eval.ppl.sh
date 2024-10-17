@@ -1,6 +1,6 @@
 set -ex
 
-hyper_file="/mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base/exp_hyper.py"
+hyper_file="/root/autodl-tmp/deepseek-ai/deepseek-moe-16b-base/exp_hyper.py"
 export HF_DATASETS_OFFLINE=1
 
 prune_type="condense"
