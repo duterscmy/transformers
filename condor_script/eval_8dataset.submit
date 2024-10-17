@@ -1,0 +1,59 @@
+####################
+#
+# Example Job for HTCondor
+#
+####################
+
+#---------------------------------------------
+# Name your batch so it's easy to distinguish in the q.
+JobBatchName = "boolq_eval"
+
+# --------------------------------------------
+# Executable and its arguments
+executable    = /mnt/fast/nobackup/users/ly0008/miniconda3/envs/moe_condense/bin/python
+
+# ---------------------------------------------------
+# Universe (vanilla, docker)
+universe         = vanilla
+
+# -------------------------------------------------
+# Event, out and error logs
+log    = c$(cluster).log
+output = c$(cluster).out
+error  = c$(cluster).error
+
+# -----------------------------------
+# File Transfer, Input, Output
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = /mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/c4-train.00000-of-01024.1w.json,/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/datasets/mmlu.json
+# -------------------------------------
+# Requirements for the Job
+request_GPUs     = 1
+requirements = (GPUs >= 1) && (CUDAGlobalMemoryMb >= 78000) && (CUDACapability >= 6.0)
+# this needs to be specified for the AI@Surrey cluster if requesting a GPU
++GPUMem          = 78000
+request_CPUs     = 1
+request_memory   = 10G
+
+# --------------------------------------
+# Resources
+
+#This job will complete in less than 1 hour
++JobRunTime = 1
+
+#This job can checkpoint
++CanCheckpoint = false
+
+
+arguments = $(script) --model hf \
+    --model_args pretrained=/mnt/fast/nobackup/users/ly0008/caomingyu/deepseek-ai/deepseek-moe-16b-base,trust_remote_code=True \
+    --device cuda \
+    --tasks arc_challenge,boolq,hellaswag,mmlu,openbookqa,piqa,rte,winogrande \
+    --batch_size 32 \
+    --output_path output.json \
+    --trust_remote_code
+
+script = lm_eval
+
+queue 1

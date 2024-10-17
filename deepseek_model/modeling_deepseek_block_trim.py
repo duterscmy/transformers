@@ -401,16 +401,16 @@ condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
 
 if num_route_experts == 6:
-    condense_layer_order = [19, 15, 22, 10,
-                                    12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]
+    condense_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]  # js
+    condense_layer_order = [6, 19, 15, 22, 10, 18, 12, 26, 9, 23, 14, 21, 0, 24, 11]  # kl
+    condense_layer_order = [25, 24, 7, 20, 1, 16, 12, 19, 6, 15, 10, 9, 18, 13, 2]  # ppl
 else:
     condense_layer_order = [19, 12, 7, 23, 10, 14,
                                     1, 24, 17, 15, 9, 21, 18, 6, 26]
 
 layer_trim_layer_order = [22, 23, 21, 20,
                              19, 18, 24, 15, 16, 17, 14, 13, 12, 11, 8]
-# layer_trim_layer_order = [23, 22, 20, 21, 
-#                                 19, 18, 16, 15, 24, 17, 14 ,12 ,13, 11, 0]
+
 # 确定剪枝的层
 trim_layer_idxs = layer_trim_layer_order[:trim_layer_num]
 layer_map_trim = {}
