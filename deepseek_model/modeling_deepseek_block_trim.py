@@ -401,9 +401,13 @@ condense_layer_num = prune_layer_num - trim_layer_num
 # layer_num -= trim_layer_num
 
 if num_route_experts == 6:
-    condense_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]  # js
+    condense_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]  # js greedy search
     condense_layer_order = [6, 19, 15, 22, 10, 18, 12, 26, 9, 23, 14, 21, 0, 24, 11]  # kl
     condense_layer_order = [25, 24, 7, 20, 1, 16, 12, 19, 6, 15, 10, 9, 18, 13, 2]  # ppl
+    condense_layer_order = [15, 19, 6, 10, 18, 7, 12, 22, 14, 9, 5, 17, 21, 8, 11,\
+                              4, 3, 20, 23, 13, 16, 1, 2, 26, 24, 25, 0]  # js global sort
+    condense_layer_order = [15, 19, 6, 10, 18, 7, 12, 22, 14, 9, 5, 17, 21, 8, 11,\
+                              4, 3, 20, 23, 13, 16, 1, 2, 26, 24, 25, 0]  # js local sort
 else:
     condense_layer_order = [19, 12, 7, 23, 10, 14,
                                     1, 24, 17, 15, 9, 21, 18, 6, 26]

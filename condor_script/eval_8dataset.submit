@@ -54,6 +54,6 @@ arguments = $(script) --model hf \
     --output_path output.json \
     --trust_remote_code
 
-script = /mnt/fast/nobackup/users/ly0008/caomingyu/lm-evaluation-harness/lm_eval
+script = /mnt/fast/nobackup/users/ly0008/miniconda3/envs/moe_condense/bin/lm_eval
 
 queue 1
