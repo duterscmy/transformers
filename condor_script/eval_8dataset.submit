@@ -6,7 +6,7 @@
 
 #---------------------------------------------
 # Name your batch so it's easy to distinguish in the q.
-JobBatchName = "boolq_eval"
+JobBatchName = "common_eval"
 
 # --------------------------------------------
 # Executable and its arguments
@@ -54,6 +54,6 @@ arguments = $(script) --model hf \
     --output_path output.json \
     --trust_remote_code
 
-script = lm_eval
+script = /mnt/fast/nobackup/users/ly0008/caomingyu/lm-evaluation-harness/lm_eval
 
 queue 1
