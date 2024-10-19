@@ -402,18 +402,18 @@ condense_layer_num = prune_layer_num - trim_layer_num
 
 if num_route_experts == 6:
     condense_layer_order = [19, 15, 22, 10, 12, 6, 14, 21, 26, 7, 17, 1, 24, 23, 9]  # js greedy search
-    condense_layer_order = [6, 19, 15, 22, 10, 18, 12, 26, 9, 23, 14, 21, 0, 24, 11]  # kl
-    condense_layer_order = [25, 24, 7, 20, 1, 16, 12, 19, 6, 15, 10, 9, 18, 13, 2]  # ppl
-    condense_layer_order = [15, 19, 6, 10, 18, 7, 12, 22, 14, 9, 5, 17, 21, 8, 11,\
-                              4, 3, 20, 23, 13, 16, 1, 2, 26, 24, 25, 0]  # js global sort
-    condense_layer_order = [1, 3, 2, 4, 5, 6, 8, 22, 21, 7, 16, 20, 19, 15, 23, \
-                            18, 17, 10, 0, 12, 11, 9, 14, 24, 13, 26, 25]  # js local sort
-    condense_layer_order = [8, 18, 16, 0, 23, 20, 11, 26, 24, 17, 15, 6, 9, \
-                            19, 22, 3, 25, 14, 4, 13, 1, 7, 5, 21, 12, 2, 10]  # random
-    condense_layer_order = [15, 10, 6, 22, 20, 12, 9, 26, 21, 19, 16, 24, 8, 11, \
-                            23, 7, 17, 13, 5, 3, 18, 0, 14, 4, 25, 1]  # expert l1 + layer greedy
-    condense_layer_order = [15, 22, 6, 18, 12, 19, 10, 21, 26, 9, 23, 20, 11, 3,\
-                             25, 16, 13, 8, 0, 24, 5, 7, 14, 17, 4, 2]  # route l1 + layer greedy
+    # condense_layer_order = [6, 19, 15, 22, 10, 18, 12, 26, 9, 23, 14, 21, 0, 24, 11]  # kl
+    # condense_layer_order = [25, 24, 7, 20, 1, 16, 12, 19, 6, 15, 10, 9, 18, 13, 2]  # ppl
+    # condense_layer_order = [15, 19, 6, 10, 18, 7, 12, 22, 14, 9, 5, 17, 21, 8, 11,\
+    #                           4, 3, 20, 23, 13, 16, 1, 2, 26, 24, 25, 0]  # js global sort
+    # condense_layer_order = [1, 3, 2, 4, 5, 6, 8, 22, 21, 7, 16, 20, 19, 15, 23, \
+    #                         18, 17, 10, 0, 12, 11, 9, 14, 24, 13, 26, 25]  # js local sort
+    # condense_layer_order = [8, 18, 16, 0, 23, 20, 11, 26, 24, 17, 15, 6, 9, \
+    #                         19, 22, 3, 25, 14, 4, 13, 1, 7, 5, 21, 12, 2, 10]  # random
+    # condense_layer_order = [15, 10, 6, 22, 20, 12, 9, 26, 21, 19, 16, 24, 8, 11, \
+    #                         23, 7, 17, 13, 5, 3, 18, 0, 14, 4, 25, 1]  # expert l1 + layer greedy
+    # condense_layer_order = [15, 22, 6, 18, 12, 19, 10, 21, 26, 9, 23, 20, 11, 3,\
+    #                          25, 16, 13, 8, 0, 24, 5, 7, 14, 17, 4, 2]  # route l1 + layer greedy
 else:
     condense_layer_order = [19, 12, 7, 23, 10, 14,
                                     1, 24, 17, 15, 9, 21, 18, 6, 26]
