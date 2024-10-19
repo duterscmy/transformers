@@ -430,7 +430,7 @@ print("condense layer idx {}".format(prune_layer_idxs))
 # print("condense layer idx after mapping {}".format(prune_layer_idxs))
 
 # 层索引 to 专家索引序列
-current_dir = "/root/transformers/deepseek_model"
+current_dir = "/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/"
 expert_order_path = os.path.join(
     current_dir, "layer_idx_to_expert_idx.greedy_jl.c4.json")
 layer_idx_to_expert_idxs = json.load(open(expert_order_path, 'r'))
