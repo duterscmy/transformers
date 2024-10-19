@@ -114,6 +114,8 @@ parser.add_argument("--model", default="./deepseek",
                     help="模型路径")
 parser.add_argument("--dynamic-weight-file", default="./",
                     help="动态路由系数")
+parser.add_argument("--output", default="./",
+                    help="输出结果的文件名")
 parser.add_argument("--greedy-expert-file",  default="./",
                     help="逐层贪心搜索的专家")
 parser.add_argument("--batch-size", type=int, default=8, help="并行解码的样本数量")
@@ -131,6 +133,7 @@ parser.add_argument("--reverse-experts", action="store_true",
                     help="如果指定，则剪枝时倒转expert顺序")
 
 args = parser.parse_args()
+output = args.output
 batch_size = args.batch_size
 num_layer = args.num_layer
 num_expert = args.num_expert
@@ -206,21 +209,13 @@ raw_questions = list(map(lambda x: x["text"], questions))
 # load dynamic weights
 if num_prune_expert == 0:
     layer_idx_to_expert_idxs = {idx: [] for idx in range(27)}
-elif prune_expert_strategy == "greedy_jl":
+else:
     layer_idx_to_expert_idxs = json.load(
-        open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.greedy_jl.json", 'r'))
-    layer_idx_to_expert_idxs = {
-        int(key): value[:num_prune_expert] for key, value in layer_idx_to_expert_idxs.items()}
-elif prune_expert_strategy == "greedy_jl_c4":
-    layer_idx_to_expert_idxs = json.load(
-        open("/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/layer_idx_to_expert_idx.greedy_jl.c4.json", 'r'))
+        open(args.greedy_expert_file, 'r'))
     layer_idx_to_expert_idxs = {
         int(key): value[:num_prune_expert] for key, value in layer_idx_to_expert_idxs.items()}
 
-if prune_expert_strategy == "greedy_jl":
-    dynamic_weight_file = "/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.json"
-elif prune_expert_strategy == "greedy_jl_c4":
-    dynamic_weight_file = "/mnt/fast/nobackup/users/ly0008/caomingyu/transformers/deepseek_model/dynamic_weight.c4.json"
+dynamic_weight_file = args.dynamic_weight_file
 dynamic_weight_tmp = json.load(open(dynamic_weight_file, 'r'))
 for key, value in dynamic_weight_tmp.items():
     key = key.split("-")
@@ -246,8 +241,6 @@ print("compute origin layer output cost {}".format(e-s))
 beam_size = 1
 max_greedy_layer_num = 26
 beam_prune_layer_idx_list = [[]]
-# prune_layer_idx_list = [19, 15, 22, 10, 12, 6, 14, 21,]  # greedy search expert list
-# no_prune_list = [0, 8, 11, 13, 16, 20, 25 ,26]
 output_dict = {"layer_idxs": [],
                "mean_jl": [],
                "layer_num": []}
@@ -303,7 +296,7 @@ try:
 
     output_df = pd.DataFrame(output_dict)
     output_df.to_excel(
-        "greedy_search_layer_prune_expert{}_stratedy{}_jl_beam{}.c4.xlsx".format(num_prune_expert, prune_expert_strategy, beam_size))
+        "{}.xlsx".format(args.output))
 except Exception as e:
     import traceback
     msg = traceback.format_exc()
