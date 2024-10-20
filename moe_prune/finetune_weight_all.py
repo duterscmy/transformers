@@ -51,8 +51,8 @@ parser.add_argument("--prune-num-expert", default=6, type=int,
                     help="剪枝后剩余的expert数量")
 parser.add_argument("--prune-num-layer", default=9, type=int,
                     help="剪枝后剩余的layer数量")
-parser.add_argument("--reverse-experts", action="store_true",
-                    help="如果指定，则剪枝时倒转expert顺序")
+parser.add_argument("--no-c4", action="store_true",
+                    help="如果指定，则不进行c4 finetune")
 parser.add_argument("--finetune-route-weight", action="store_true",
                     help="如果指定，则finetune expert route weight")
 
@@ -68,10 +68,11 @@ num_expert = args.num_expert
 prune_num_expert = args.prune_num_expert
 prune_num_layer = args.prune_num_layer
 output_dir = args.output_dir
+no_c4 = args.no_c4
 
 
 available_gpu_ids_str = "0"
-memory_per_gpu = "48GiB"  # @param ["", "38GiB"] {allow-input: true}
+memory_per_gpu = "78GiB"  # @param ["", "38GiB"] {allow-input: true}
 cpu_memory = '80GiB'  # @param ["50GiB"] {allow-input: true}
 model_dtype = 'bfloat16'  # @param ["float32", "bfloat16"]
 offload = False  # @param {type:"boolean"}
@@ -249,49 +250,50 @@ def get_custom_schedule_with_warmup(optimizer: Optimizer, num_warmup_steps: int,
 
 
 ######C4######
-training_args = TrainingArguments(
-    output_dir=output_dir,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
-    overwrite_output_dir=True,               # 覆盖输出文件夹
-    num_train_epochs=1,                      # 训练轮数
-    per_device_train_batch_size=8,           # 每个设备的batch大小
-    save_steps=1000000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
-    save_strategy="steps",
-    save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
-    logging_steps=5,                        # 日志记录的步数
-    learning_rate=max_lr,
-    # lr_scheduler_type="cosine",
-    warmup_ratio=0.2,
-    # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
-    # eval_strategy="steps",
-    logging_dir=os.path.join(output_dir, "run_log")
-    # 注意：其他参数可以根据需要进行调整
-)
-# Calculate total training steps
-num_training_steps = len(
-    c4_tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
-# Define minimum learning rate
-min_lr = 5e-6
+if not no_c4:
+    training_args = TrainingArguments(
+        output_dir=output_dir,          # 输出文件夹（注意：尽管设置了output_dir，但模型不会被保存）
+        overwrite_output_dir=True,               # 覆盖输出文件夹
+        num_train_epochs=1,                      # 训练轮数
+        per_device_train_batch_size=8,           # 每个设备的batch大小
+        save_steps=1000000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+        save_strategy="steps",
+        save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
+        logging_steps=5,                        # 日志记录的步数
+        learning_rate=max_lr,
+        # lr_scheduler_type="cosine",
+        warmup_ratio=0.2,
+        # eval_steps=100,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
+        # eval_strategy="steps",
+        logging_dir=os.path.join(output_dir, "run_log")
+        # 注意：其他参数可以根据需要进行调整
+    )
+    # Calculate total training steps
+    num_training_steps = len(
+        c4_tokenized_datasets['train']) // training_args.per_device_train_batch_size * training_args.num_train_epochs
+    # Define minimum learning rate
+    min_lr = 5e-6
 
-# Create the optimizer
-optimizer = torch.optim.AdamW(
-    model.parameters(), lr=training_args.learning_rate)
+    # Create the optimizer
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=training_args.learning_rate)
 
-# Create the custom scheduler
-scheduler = get_custom_schedule_with_warmup(
-    optimizer, training_args.warmup_steps, num_training_steps, min_lr)
-# 初始化Trainer
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=c4_tokenized_datasets['train'],
-    compute_metrics=compute_metrics,
-    optimizers=(optimizer, scheduler)
-)
-trainer.train()
+    # Create the custom scheduler
+    scheduler = get_custom_schedule_with_warmup(
+        optimizer, training_args.warmup_steps, num_training_steps, min_lr)
+    # 初始化Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=c4_tokenized_datasets['train'],
+        compute_metrics=compute_metrics,
+        optimizers=(optimizer, scheduler)
+    )
+    trainer.train()
 
-# 删除c4 ft model
-rm_ft_model_cmd = "rm -r {}/checkpoint*".format(output_dir)
-os.system(rm_ft_model_cmd)
+    # 删除c4 ft model
+    rm_ft_model_cmd = "rm -r {}/checkpoint*".format(output_dir)
+    os.system(rm_ft_model_cmd)
 
 
 #######SFT#######
@@ -303,7 +305,7 @@ training_args = TrainingArguments(
     save_steps=1000000000,                         # 不保存检查点（或者设置一个非常大的值，如1000000）
     save_strategy="steps",
     save_total_limit=0,                      # 不保存任何检查点（虽然设置为0在某些情况下可能不是必需的，但这里为了明确性）
-    logging_steps=5,                        # 日志记录的步数
+    logging_steps=50,                        # 日志记录的步数
     learning_rate=max_lr,
     # lr_scheduler_type="cosine",
     warmup_ratio=0.1,
